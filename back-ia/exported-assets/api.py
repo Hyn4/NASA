@@ -1,15 +1,3 @@
-
-"""
-API REST para Classificação de Exoplanetas
-Modelo: Random Forest treinado com datasets K2 e TOI da NASA
-
-Endpoints:
-- POST /predict - Predição única
-- POST /predict_batch - Predição em lote
-- GET /health - Health check
-- GET /model_info - Informações do modelo
-"""
-
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field, ValidationError
 from typing import List, Optional
