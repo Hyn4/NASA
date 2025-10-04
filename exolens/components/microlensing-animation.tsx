@@ -20,6 +20,9 @@ export function MicrolensingAnimation() {
     const backgroundStarY = 100
     const lensY = 150
 
+    // Store light curve points
+    let lightCurve: { x: number; y: number }[] = []
+
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -29,18 +32,31 @@ export function MicrolensingAnimation() {
       ctx.arc(backgroundStarX, backgroundStarY, 8, 0, Math.PI * 2)
       ctx.fill()
 
-      // Calculate lensing effect
+      // --- Lensing Calculation ---
+      // Main lensing from the star, using a Gaussian for a smooth curve
       const distance = Math.abs(lensX - backgroundStarX)
-      const maxLensing = 100
-      const lensingStrength = distance < maxLensing ? (1 - distance / maxLensing) * 3 : 0
+      const sigma = 40 // Width of the lensing effect
+      const lensingStrength = 1.5 * Math.exp(-(distance ** 2) / (2 * sigma ** 2)) // Reduced peak
+
+      // Planet orbiting the lens star
+      const planetAngle = lensX * 0.05
+      const planetOrbitRadius = 25
+      const planetX = lensX + Math.cos(planetAngle) * planetOrbitRadius
+      const planetY = lensY + Math.sin(planetAngle) * planetOrbitRadius
+
+      // Planetary lensing spike, also a smooth Gaussian curve
+      const planetDistance = Math.abs(planetX - backgroundStarX)
+      const spikeSigma = 8 // Wider spike for smoothness
+      const planetSpike = 0.3 * Math.exp(-(planetDistance ** 2) / (2 * spikeSigma ** 2)) // Reduced peak
+
+      const totalMagnification = 1 + lensingStrength + planetSpike
+      const lensedEffect = lensingStrength + planetSpike
 
       // Draw lensed light (magnified background star)
-      if (lensingStrength > 0) {
-        ctx.fillStyle = `rgba(255, 235, 59, ${0.3 * lensingStrength})`
-        ctx.beginPath()
-        ctx.arc(backgroundStarX, backgroundStarY, 8 + lensingStrength * 10, 0, Math.PI * 2)
-        ctx.fill()
-      }
+      ctx.fillStyle = `rgba(255, 235, 59, ${Math.min(1, 0.5 + lensedEffect / 3)})`
+      ctx.beginPath()
+      ctx.arc(backgroundStarX, backgroundStarY, 8 + lensedEffect * 5, 0, Math.PI * 2)
+      ctx.fill()
 
       // Draw foreground star (lens)
       ctx.fillStyle = "#ff6b4a"
@@ -48,18 +64,14 @@ export function MicrolensingAnimation() {
       ctx.arc(lensX, lensY, 12, 0, Math.PI * 2)
       ctx.fill()
 
-      // Draw planet orbiting the lens star
-      const planetAngle = (lensX * 0.05) % (Math.PI * 2)
-      const planetOrbitRadius = 25
-      const planetX = lensX + Math.cos(planetAngle) * planetOrbitRadius
-      const planetY = lensY + Math.sin(planetAngle) * planetOrbitRadius
-
+      // Draw planet
       ctx.fillStyle = "#4682b4"
       ctx.beginPath()
       ctx.arc(planetX, planetY, 6, 0, Math.PI * 2)
       ctx.fill()
 
-      // Draw light curve below
+      // --- Light Curve Graph ---
+      // Baseline
       ctx.strokeStyle = "#666"
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -67,27 +79,25 @@ export function MicrolensingAnimation() {
       ctx.lineTo(350, 250)
       ctx.stroke()
 
-      // Draw magnification curve
-      const magnification = 1 + lensingStrength
-      const curveY = 250 - (magnification - 1) * 40
+      // Update light curve data
+      const graphX = ((lensX + 50) / 500) * 300 + 50
+      const curveY = 250 - (totalMagnification - 1) * 40
 
+      if (lensX >= -50) {
+        if (!lightCurve.length || lightCurve[lightCurve.length - 1].x < graphX) {
+          lightCurve.push({ x: graphX, y: curveY })
+        }
+      }
+
+      // Draw magnification curve from stored points
       ctx.strokeStyle = "#4169e1"
       ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.moveTo(50, 250)
-      ctx.lineTo(lensX * 0.75 + 50, curveY)
+      lightCurve.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.x, p.y)
+        else ctx.lineTo(p.x, p.y)
+      })
       ctx.stroke()
-
-      // Draw planet spike
-      if (distance < 50 && distance > 30) {
-        const spikeHeight = 15
-        ctx.strokeStyle = "#ff6b4a"
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(lensX * 0.75 + 50, curveY)
-        ctx.lineTo(lensX * 0.75 + 50, curveY - spikeHeight)
-        ctx.stroke()
-      }
 
       // Labels
       ctx.fillStyle = "#999"
@@ -95,10 +105,11 @@ export function MicrolensingAnimation() {
       ctx.fillText("Magnification", 10, 230)
       ctx.fillText("Time →", 320, 270)
 
-      // Move lens star
-      lensX += 2
+      // Move lens star at a slower speed
+      lensX += 1
       if (lensX > 450) {
         lensX = -50
+        lightCurve = [] // Reset curve for next pass
       }
 
       requestAnimationFrame(animate)

@@ -21,19 +21,24 @@ export function TransitAnimation() {
     const starRadius = 60
     const planetRadius = 15
 
-    // Armazena pontos da curva de luz
+    // Store light curve points
     let lightCurve: { x: number; y: number }[] = []
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // ----- Cálculo de brilho -----
+      // ----- Brightness Calculation -----
       const distanceFromCenter = Math.abs(planetX - starX)
       const isTransiting = distanceFromCenter < starRadius
-      const transitProgress = isTransiting ? 1 - distanceFromCenter / starRadius : 0
-      const brightness = 1 - transitProgress * 0.90 // até 15% de queda
 
-      // ----- Desenho da estrela -----
+      // Use a curved easing function for a more realistic light curve
+      const normalizedDistance = Math.min(1, distanceFromCenter / starRadius)
+      // Create a semi-circular curve for the dip
+      const easeInProgress = Math.sqrt(1 - normalizedDistance ** 2)
+      const transitProgress = isTransiting ? easeInProgress : 0
+      const brightness = 1 - transitProgress * 0.9
+
+      // ----- Star Drawing -----
       const gradient = ctx.createRadialGradient(starX, starY, 0, starX, starY, starRadius)
       gradient.addColorStop(0, `rgba(255, 235, 59, ${brightness})`)
       gradient.addColorStop(0.5, `rgba(255, 167, 38, ${brightness})`)
@@ -43,19 +48,19 @@ export function TransitAnimation() {
       ctx.arc(starX, starY, starRadius, 0, Math.PI * 2)
       ctx.fill()
 
-      // Glow da estrela
+      // Star Glow
       ctx.fillStyle = `rgba(255, 235, 59, ${0.2 * brightness})`
       ctx.beginPath()
       ctx.arc(starX, starY, starRadius + 10, 0, Math.PI * 2)
       ctx.fill()
 
-      // ----- Desenho do planeta -----
+      // ----- Planet Drawing -----
       ctx.fillStyle = "#4682b4"
       ctx.beginPath()
       ctx.arc(planetX, starY, planetRadius, 0, Math.PI * 2)
       ctx.fill()
 
-      // Sombra do planeta na estrela
+      // Planet's shadow on the star
       if (isTransiting) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.4)"
         ctx.beginPath()
@@ -63,8 +68,8 @@ export function TransitAnimation() {
         ctx.fill()
       }
 
-      // ----- Gráfico da curva de luz -----
-      // Eixo
+      // ----- Light Curve Graph -----
+      // Axis
       ctx.strokeStyle = "#666"
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -72,19 +77,19 @@ export function TransitAnimation() {
       ctx.lineTo(350, 250)
       ctx.stroke()
 
-      // Adiciona novo ponto ao gráfico
-      const graphX = (planetX + 50) * 0.8// escala horizontal
-      const graphY = 250 - brightness * 40 // escala vertical
+      // Add new point to graph
+      const graphX = (planetX + 50) * 0.8 // horizontal scale
+      const graphY = 250 - brightness * 40 // vertical scale
       if (graphX >= 50 && graphX <= 350) {
         lightCurve.push({ x: graphX, y: graphY })
       }
 
-      // Mantém um máximo de pontos
+      // Keep a maximum number of points
       if (lightCurve.length > 300) {
         lightCurve.shift()
       }
 
-      // Desenha curva
+      // Draw curve
       ctx.strokeStyle = "#4169e1"
       ctx.lineWidth = 2
       ctx.beginPath()
@@ -100,11 +105,11 @@ export function TransitAnimation() {
       ctx.fillText("Brightness", 10, 230)
       ctx.fillText("Time →", 320, 270)
 
-      // ----- Movimento do planeta -----
+      // ----- Planet Movement -----
       planetX += 2
       if (planetX > 450) {
         planetX = -50
-        lightCurve = [] // reseta curva quando reinicia
+        lightCurve = [] // reset curve on restart
       }
 
       requestAnimationFrame(animate)

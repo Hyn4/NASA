@@ -1,19 +1,18 @@
 "use client"
 
-import { useRef } from "react"
-import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
+import { Canvas, useFrame } from "@react-three/fiber"
+import { useRef } from "react"
 import type * as THREE from "three"
-import type { PlanetParameters } from "./planet-creator"
-import { StarField } from "./star-field"
+import type { PlanetSimulationParameters } from "./planet-creator"
 
 interface PlanetPreviewProps {
-  parameters: PlanetParameters
+  parameters: PlanetSimulationParameters
   isGenerating: boolean
   textureUrl?: string
 }
 
-function Planet({ parameters, textureUrl }: { parameters: PlanetParameters; textureUrl?: string }) {
+function Planet({ parameters, textureUrl }: { parameters: PlanetSimulationParameters; textureUrl?: string }) {
   const meshRef = useRef<THREE.Mesh>(null)
 
   useFrame(() => {
