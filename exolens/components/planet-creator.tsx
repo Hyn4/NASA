@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -8,22 +8,23 @@ import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { PlanetPreview } from "@/components/planet-preview"
 import { LightCurveSimulation } from "@/components/light-curve-simulation"
-import { Sparkles, Box, LineChart, Info } from "lucide-react"
+import { Sparkles, Box, LineChart, Info, Upload, X, AlertCircle } from "lucide-react"
 import { generatePlanetTexture } from "@/lib/nasa-api"
 import { useToast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 // Interface para os inputs do usuário
 export interface PlanetAnalysisParameters {
-  pl_orbper: string // Orbital Period (days)
-  pl_rade: string // Planet Radius (Earth Radius)
-  pl_trandep: string // Transit Depth (ppm)
-  st_teff: string // Stellar Effective Temperature (K)
-  st_rad: string // Stellar Radius (Solar Radius)
-  st_logg: string // Stellar Surface Gravity (log10(cm/s**2))
+  pl_orbper: string
+  pl_rade: string
+  pl_trandep: string
+  st_teff: string
+  st_rad: string
+  st_logg: string
 }
 
-// Interface para a simulação (PlanetPreview, LightCurve)
+// Interface para a simulação
 export interface PlanetSimulationParameters {
   radius: number
   mass: number
@@ -56,7 +57,6 @@ const habitableZones = {
 }
 
 export function PlanetCreator() {
-  // State para os inputs do usuário (com Terra/Sol como padrão)
   const [analysisParams, setAnalysisParams] = useState<PlanetAnalysisParameters>({
     pl_orbper: "365.25",
     pl_rade: "1",
@@ -66,7 +66,6 @@ export function PlanetCreator() {
     st_logg: "4.44",
   })
 
-  // State para os parâmetros de simulação derivados
   const [simulationParams, setSimulationParams] = useState<PlanetSimulationParameters>({
     radius: 1,
     mass: 1,
@@ -80,13 +79,15 @@ export function PlanetCreator() {
   const [generatedTexture, setGeneratedTexture] = useState<{ url: string; prompt: string } | null>(null)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [isClient, setIsClient] = useState(false)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
   useEffect(() => {
     setIsClient(true)
   }, [])
 
-  // Este hook deriva os parâmetros de simulação dos parâmetros de análise
   useEffect(() => {
     const deriveSimulationParameters = () => {
       const pl_rade = parseFloat(analysisParams.pl_rade) || 0
@@ -96,17 +97,14 @@ export function PlanetCreator() {
       const pl_orbper = parseFloat(analysisParams.pl_orbper) || 0
 
       if (!pl_rade || !st_teff || !st_rad || !st_logg || !pl_orbper) {
-        return // Dados insuficientes
+        return
       }
 
-      // 1. Derivar tipo de estrela pela temperatura
       const starType: PlanetSimulationParameters["starType"] =
         st_teff < 4000 ? "red-dwarf" : st_teff < 7000 ? "sun-like" : "blue-giant"
 
-      // 2. Derivar massa (aproximação: M proporcional a R^2)
       const mass = Math.pow(pl_rade, 2)
 
-      // 3. Derivar distância do período orbital (3ª Lei de Kepler)
       const g_star_cgs = Math.pow(10, st_logg)
       const r_star_cm = st_rad * 6.957e10
       const G_cgs = 6.6743e-8
@@ -128,7 +126,6 @@ export function PlanetCreator() {
     deriveSimulationParameters()
   }, [analysisParams])
 
-  // Classificação do planeta baseada nos parâmetros
   const { planetType, density, isHabitable } = useMemo(() => {
     const { radius, mass, starType, distance } = simulationParams
     const type = radius < 1.6 ? "Terrestrial" : radius < 5 ? "Neptune-like" : "Gas Giant"
@@ -148,49 +145,158 @@ export function PlanetCreator() {
     }
   }
 
+  // Funções de upload de arquivo[web:83][web:84]
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      validateAndSetFile(file)
+    }
+  }
+
+  const validateAndSetFile = (file: File) => {
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload a CSV file.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      toast({
+        title: "File Too Large",
+        description: "Maximum file size is 10MB.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setUploadedFile(file)
+    toast({
+      title: "File Uploaded",
+      description: `${file.name} is ready for analysis.`
+    })
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      validateAndSetFile(file)
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const handleRunAnalysis = async () => {
     setIsProcessing(true)
     setGeneratedTexture(null)
     setAnalysisResult(null)
 
-    const payload = Object.fromEntries(
-      Object.entries(analysisParams).map(([key, value]) => [key, Number(value)])
-    )
-
-    if (Object.values(payload).some(v => isNaN(v) || v === 0)) {
-      toast({ title: "Invalid Input", description: "Please ensure all fields are filled with valid numbers.", variant: "destructive" })
-      setIsProcessing(false)
-      return
-    }
-
     try {
-      const endpoint = aiMode === 'lightcurve' ? '/predict_lightcurve' : '/api/analyze-planet'
+      if (aiMode === 'lightcurve') {
+        // Modo LightCurve: enviar arquivo CSV[web:67]
+        if (!uploadedFile) {
+          toast({
+            title: "No File Selected",
+            description: "Please upload a CSV file before running analysis.",
+            variant: "destructive"
+          })
+          setIsProcessing(false)
+          return
+        }
 
-      const [textureResult, analysisResponse] = await Promise.all([
-        generatePlanetTexture({
-          ...simulationParams,
-          planetType: planetType,
-        }),
-        fetch(endpoint, {
+        const formData = new FormData()
+        formData.append('file', uploadedFile)
+
+        const analysisResponse = await fetch('/predict_lightcurve', {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }),
-      ])
+          body: formData,
+        })
 
-      setGeneratedTexture({ url: textureResult.textureUrl, prompt: textureResult.prompt })
-      toast({ title: "Planet Texture Generated!", description: "AI is creating a visual representation." })
+        if (!analysisResponse.ok) {
+          const errorData = await analysisResponse.json()
+          throw new Error(errorData.error || "LightCurve analysis failed")
+        }
 
-      if (!analysisResponse.ok) {
-        const errorData = await analysisResponse.json()
-        throw new Error(errorData.error || `Analysis via ${endpoint} failed`)
+        const analysisData = await analysisResponse.json()
+        setAnalysisResult(analysisData)
+        toast({
+          title: "Analysis Complete!",
+          description: "The LightCurve AI has classified the exoplanet."
+        })
+
+      } else {
+        // Modo Feature: enviar parâmetros JSON
+        const payload = Object.fromEntries(
+          Object.entries(analysisParams).map(([key, value]) => [key, Number(value)])
+        )
+
+        if (Object.values(payload).some(v => isNaN(v) || v === 0)) {
+          toast({
+            title: "Invalid Input",
+            description: "Please ensure all fields are filled with valid numbers.",
+            variant: "destructive"
+          })
+          setIsProcessing(false)
+          return
+        }
+
+        const [textureResult, analysisResponse] = await Promise.all([
+          generatePlanetTexture({
+            ...simulationParams,
+            planetType: planetType,
+          }),
+          fetch("/api/analyze-planet", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }),
+        ])
+
+        setGeneratedTexture({ url: textureResult.textureUrl, prompt: textureResult.prompt })
+        toast({
+          title: "Planet Texture Generated!",
+          description: "AI is creating a visual representation."
+        })
+
+        if (!analysisResponse.ok) {
+          const errorData = await analysisResponse.json()
+          throw new Error(errorData.error || "Analysis failed")
+        }
+
+        const analysisData = await analysisResponse.json()
+        setAnalysisResult(analysisData)
+        toast({
+          title: "Analysis Complete!",
+          description: "The Feature AI has classified the exoplanet."
+        })
       }
-      const analysisData = await analysisResponse.json()
-      setAnalysisResult(analysisData)
-      toast({ title: "Analysis Complete!", description: `The ${aiMode === 'feature' ? 'Feature' : 'LightCurve'} AI has classified the exoplanet.` })
 
     } catch (error: any) {
-      toast({ title: "An Error Occurred", description: error.message, variant: "destructive" })
+      toast({
+        title: "An Error Occurred",
+        description: error.message,
+        variant: "destructive"
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -203,7 +309,6 @@ export function PlanetCreator() {
   return (
     <div className="max-w-7xl mx-auto">
       <style jsx global>{`
-        /* Estilo customizado para inputs dark theme */
         input[type="text"]:not([class*="text-"]) {
           color: #fafafa !important;
         }
@@ -212,68 +317,171 @@ export function PlanetCreator() {
         {/* Painel de Controles */}
         <div className="bg-[#1b1b1b] text-gray-200 flex flex-col gap-6 rounded-xl border border-[#333333] shadow-sm p-6 space-y-6">
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white">Exoplanet Parameters</h2>
-            <p className="text-sm text-gray-400">Enter observational data to generate a simulation and run AI analysis.</p>
+            <h2 className="text-2xl font-bold text-white">
+              {aiMode === 'lightcurve' ? 'Light Curve Upload' : 'Exoplanet Parameters'}
+            </h2>
+            <p className="text-sm text-gray-400">
+              {aiMode === 'lightcurve'
+                ? 'Upload a CSV file containing light curve data for AI analysis.'
+                : 'Enter observational data to generate a simulation and run AI analysis.'}
+            </p>
           </div>
 
-          {/* Campos de Input */}
-          <fieldset disabled={isProcessing} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(Object.keys(parameterLabels) as Array<keyof PlanetAnalysisParameters>).map((key) => (
-                <div className="space-y-2" key={key}>
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor={key} className="text-white">{parameterLabels[key].label}</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-3 h-3 text-gray-400 cursor-pointer hover:text-gray-300 transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-[#2c2c2c] border-[#404040]">
-                          <p className="text-gray-300">{parameterLabels[key].tooltip}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Input
-                    id={key}
-                    type="text"
-                    value={analysisParams[key]}
-                    onChange={(e) => updateParameter(key, e.target.value)}
-                    placeholder="e.g. 1.0"
-                    className="bg-[#2c2c2c] border-[#404040] text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20"
+          {/* Conteúdo condicional baseado no modo AI */}
+          {aiMode === 'lightcurve' ? (
+            <>
+              {/* Área de Upload de Arquivo CSV */}
+              <div className="space-y-4">
+                <Alert className="bg-[#2c2c2c] border-[#404040] text-gray-300">
+                  <AlertCircle className="h-4 w-4 text-blue-400" />
+                  <AlertDescription className="text-sm">
+                    <strong className="text-white">Required Format:</strong> CSV file with KELT dataset format
+                    <ul className="mt-2 ml-4 space-y-1 text-xs">
+                      <li>• <strong>TIME</strong>: Timestamp in days (BJD - Barycentric Julian Date)</li>
+                      <li>• <strong>MAG</strong>: Instrumental KELT magnitude</li>
+                      <li>• <strong>MAG_ERR</strong>: Magnitude error (uncertainty)</li>
+                    </ul>
+                    <p className="mt-2 text-xs text-gray-400">
+                      📋 One planet per CSV file. Maximum file size: 10MB
+                    </p>
+                  </AlertDescription>
+                </Alert>
+
+                {/* Drag & Drop Zone[web:81][web:83] */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`
+                    relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+                    transition-all duration-200 ease-in-out
+                    ${isDragging
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-[#404040] bg-[#2c2c2c] hover:border-[#505050] hover:bg-[#2c2c2c]/80'
+                    }
+                  `}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
-                </div>
-              ))}
-            </div>
-          </fieldset>
 
-          {/* Card de Classificação do Planeta */}
-          <div className="text-gray-200 flex flex-col gap-3 rounded-xl border border-[#333333] shadow-sm p-4 bg-[#2c2c2c]/70">
-            <h3 className="font-semibold text-sm text-white">Planet Classification</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Type:</span>
-                <span className="text-sm font-bold text-blue-400">{planetType}</span>
+                  {uploadedFile ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-500/20 rounded">
+                          <Upload className="w-5 h-5 text-green-400" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-white">{uploadedFile.name}</p>
+                          <p className="text-xs text-gray-400">
+                            {(uploadedFile.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveFile()
+                        }}
+                        className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                      >
+                        <X className="w-5 h-5 text-red-400" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex justify-center">
+                        <div className="p-4 bg-[#3c3c3c] rounded-full">
+                          <Upload className="w-8 h-8 text-gray-400" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">
+                          Drag & drop your CSV file here
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          or click to browse files
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Supports: .csv files only
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Habitable Zone:</span>
-                <span className={`text-sm font-bold ${isHabitable ? 'text-green-400' : 'text-red-400'}`}>
-                  {isHabitable ? 'Yes' : 'No'}
-                </span>
+            </>
+          ) : (
+            <>
+              {/* Campos de Input (Feature Mode) */}
+              <fieldset disabled={isProcessing} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(Object.keys(parameterLabels) as Array<keyof PlanetAnalysisParameters>).map((key) => (
+                    <div className="space-y-2" key={key}>
+                      <div className="flex items-center space-x-2">
+                        <Label htmlFor={key} className="text-white">{parameterLabels[key].label}</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-3 h-3 text-gray-400 cursor-pointer hover:text-gray-300 transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-[#2c2c2c] border-[#404040]">
+                              <p className="text-gray-300">{parameterLabels[key].tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Input
+                        id={key}
+                        type="text"
+                        value={analysisParams[key]}
+                        onChange={(e) => updateParameter(key, e.target.value)}
+                        placeholder="e.g. 1.0"
+                        className="bg-[#2c2c2c] border-[#404040] text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
+
+              {/* Card de Classificação do Planeta */}
+              <div className="text-gray-200 flex flex-col gap-3 rounded-xl border border-[#333333] shadow-sm p-4 bg-[#2c2c2c]/70">
+                <h3 className="font-semibold text-sm text-white">Planet Classification</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Type:</span>
+                    <span className="text-sm font-bold text-blue-400">{planetType}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Habitable Zone:</span>
+                    <span className={`text-sm font-bold ${isHabitable ? 'text-green-400' : 'text-red-400'}`}>
+                      {isHabitable ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Density:</span>
+                    <span className="text-sm font-mono text-white">{density.toFixed(2)} g/cm³</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Density:</span>
-                <span className="text-sm font-mono text-white">{density.toFixed(2)} g/cm³</span>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Toggle para selecionar o modelo de IA */}
           <ToggleGroup
             type="single"
             value={aiMode}
             onValueChange={(value: AiMode) => {
-              if (value) setAiMode(value)
+              if (value) {
+                setAiMode(value)
+                setUploadedFile(null)
+                setAnalysisResult(null)
+              }
             }}
             className="grid grid-cols-2 gap-2"
             disabled={isProcessing}
@@ -297,7 +505,11 @@ export function PlanetCreator() {
           </ToggleGroup>
 
           {/* Botão de Análise */}
-          <Button onClick={handleRunAnalysis} disabled={isProcessing} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+          <Button
+            onClick={handleRunAnalysis}
+            disabled={isProcessing || (aiMode === 'lightcurve' && !uploadedFile)}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {isProcessing ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -335,7 +547,7 @@ export function PlanetCreator() {
           )}
 
           {/* Prompt de Geração de IA */}
-          {generatedTexture && (
+          {generatedTexture && aiMode === 'feature' && (
             <Card className="p-4 bg-[#2c2c2c]/70 border-[#404040]">
               <h4 className="text-sm font-semibold mb-2 text-white">AI Generation Prompt:</h4>
               <p className="text-xs text-gray-400 leading-relaxed">{generatedTexture.prompt}</p>
