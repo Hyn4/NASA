@@ -129,12 +129,12 @@ export function ThreeScene() {
   const [isLoading, setIsLoading] = useState(true)
 
   return (
-    <div className="w-full h-screen relative">
+    <div className="w-full h-[calc(100vh-65px)] relative overflow-hidden">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground">Loading TRAPPIST-1 System...</p>
+            <p className="text-[#acacac]">Loading TRAPPIST-1 System...</p>
           </div>
         </div>
       )}
@@ -144,9 +144,9 @@ export function ThreeScene() {
       </Canvas>
 
       {/* Instructions overlay */}
-      <div className="absolute top-4 left-4 bg-card/80 backdrop-blur-sm border border-border rounded-lg p-4 max-w-xs">
+      <div className="absolute top-4 left-4 backdrop-blur-sm  rounded-lg p-4 max-w-xs">
         <h3 className="font-bold mb-2">Controls</h3>
-        <ul className="text-sm text-muted-foreground space-y-1">
+        <ul className="text-sm text-[#acacac] space-y-1">
           <li>• Click and drag to rotate</li>
           <li>• Scroll to zoom</li>
           <li>• Click a planet for details</li>
@@ -154,16 +154,16 @@ export function ThreeScene() {
       </div>
 
       {/* System info */}
-      <div className="absolute top-4 right-4 bg-card/80 backdrop-blur-sm border border-border rounded-lg p-4">
+      <div className="absolute top-4 right-4 backdrop-blur-sm rounded-lg p-4">
         <h3 className="font-bold text-lg mb-2">TRAPPIST-1 System</h3>
         <div className="text-sm space-y-1">
-          <p className="text-muted-foreground">
+          <p className="text-[#acacac]">
             <span className="text-foreground font-medium">Distance:</span> 40 light-years
           </p>
-          <p className="text-muted-foreground">
+          <p className="text-[#acacac]">
             <span className="text-foreground font-medium">Planets:</span> 7 terrestrial
           </p>
-          <p className="text-muted-foreground">
+          <p className="text-[#acacac]">
             <span className="text-foreground font-medium">Star Type:</span> Ultra-cool red dwarf
           </p>
         </div>
