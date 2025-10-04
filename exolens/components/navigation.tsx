@@ -19,7 +19,7 @@ export function Navigation() {
   const pathname = usePathname()
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b to-[#0a0a0f] via-[#0f0f1a] from-[#1a1a2e] ">
+    <header className="fixed h-[65px] top-0 left-0 right-0 z-50 bg-gradient-to-b to-[#0a0a0f] via-[#0f0f1a] from-[#1a1a2e] ">
       <StarField />
 
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -40,10 +40,10 @@ export function Navigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                "px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                "px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200",
                 pathname === item.href
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                  : "text-muted-foreground hover:text-foreground hover:shadow-[0_0_20px_rgba(65,105,225,0.3),_0_0_40px_rgba(0,217,255,0.2)]",
               )}
             >
               {item.label}
@@ -52,7 +52,7 @@ export function Navigation() {
         </div>
 
         {/* CTA Button */}
-        <Button asChild size="sm" className="hidden sm:flex">
+        <Button asChild size="sm" className="hidden sm:flex transition-all duration-300 hover:shadow-[0_0_20px_rgba(65,105,225,0.3),_0_0_40px_rgba(0,217,255,0.2)]">
           <Link href="/explorer">Launch Explorer</Link>
         </Button>
       </nav>

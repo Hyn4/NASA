@@ -14,8 +14,8 @@ export function PlanetInfo() {
       <div className="bg-card border border-border rounded-lg p-6 shadow-2xl animate-in slide-in-from-bottom-4">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold">{selectedPlanet.name}</h2>
-            <p className="text-sm text-muted-foreground">{selectedPlanet.type} Planet</p>
+            <h2 className="text-2xl font-bold text-black">{selectedPlanet.name}</h2>
+            <p className="text-sm text-black">{selectedPlanet.type} Planet</p>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setSelectedPlanet(null)}>
             <X className="w-4 h-4" />
@@ -25,32 +25,32 @@ export function PlanetInfo() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Radius</p>
-            <p className="text-lg font-semibold">{selectedPlanet.radius.toFixed(2)} R⊕</p>
+            <p className="text-lg font-semibold text-black">{selectedPlanet.radius.toFixed(2)} R⊕</p>
           </div>
 
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Distance</p>
-            <p className="text-lg font-semibold">{selectedPlanet.distance.toFixed(4)} AU</p>
+            <p className="text-lg font-semibold text-black">{selectedPlanet.distance.toFixed(4)} AU</p>
           </div>
 
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Orbital Period</p>
-            <p className="text-lg font-semibold">{selectedPlanet.period.toFixed(2)} days</p>
+            <p className="text-lg font-semibold text-black">{selectedPlanet.period.toFixed(2)} days</p>
           </div>
 
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Temperature</p>
-            <p className="text-lg font-semibold">{selectedPlanet.temperature}K</p>
+            <p className="text-lg font-semibold text-black">{selectedPlanet.temperature}K</p>
           </div>
 
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Discovered</p>
-            <p className="text-lg font-semibold">{selectedPlanet.discovered}</p>
+            <p className="text-lg font-semibold text-black">{selectedPlanet.discovered}</p>
           </div>
 
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Type</p>
-            <p className="text-lg font-semibold">{selectedPlanet.type}</p>
+            <p className="text-lg font-semibold text-black">{selectedPlanet.type}</p>
           </div>
         </div>
 
