@@ -10,7 +10,7 @@ export default function MethodsPage() {
         <div className="max-w-4xl mx-auto text-center space-y-6 mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm">
             <Telescope className="w-4 h-4 text-primary" />
-            <span>Educational Content</span>
+            <span className="text-black font-semibold">Educational Content</span>
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold text-balance">

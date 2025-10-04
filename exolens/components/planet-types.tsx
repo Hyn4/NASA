@@ -46,7 +46,7 @@ export function PlanetTypes() {
 
         <div className="grid md:grid-cols-2 gap-8">
           {planetTypes.map((type) => (
-            <Card key={type.name} className="overflow-hidden border-border hover:border-primary transition-colors">
+            <Card key={type.name} className="overflow-hidden border-border transition-colors ">
               <div className={`h-48 bg-gradient-to-br ${type.color} relative`}>
                 <img
                   src={type.image || "/placeholder.svg"}
