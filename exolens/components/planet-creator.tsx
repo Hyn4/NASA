@@ -1,18 +1,46 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from "react"
+import dynamic from "next/dynamic"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { PlanetPreview } from "@/components/planet-preview"
-import { LightCurveSimulation } from "@/components/light-curve-simulation"
 import { Sparkles, Box, LineChart, Info, Upload, X, AlertCircle } from "lucide-react"
 import { generatePlanetTexture } from "@/lib/nasa-api"
 import { useToast } from "@/hooks/use-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+
+
+// Importação dinâmica sem SSR
+const PlanetPreview = dynamic(
+  () => import("@/components/planet-preview").then(mod => ({ default: mod.PlanetPreview })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] w-full flex items-center justify-center rounded-lg bg-black border border-[#333333]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Loading 3D Preview...</p>
+        </div>
+      </div>
+    )
+  }
+)
+
+const LightCurveSimulation = dynamic(
+  () => import("@/components/light-curve-simulation").then(mod => ({ default: mod.LightCurveSimulation })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[298px] w-full flex items-center justify-center">
+        <p className="text-gray-400">Loading Simulation...</p>
+      </div>
+    )
+  }
+)
 
 // Interface para os inputs do usuário
 export interface PlanetAnalysisParameters {
@@ -24,7 +52,6 @@ export interface PlanetAnalysisParameters {
   st_logg: string
 }
 
-// Interface para a simulação
 export interface PlanetSimulationParameters {
   radius: number
   mass: number
@@ -43,6 +70,10 @@ const parameterLabels: { [key in keyof PlanetAnalysisParameters]: { label: strin
   st_rad: { label: "Stellar Radius (R☉)", tooltip: "The radius of the host star in multiples of the Sun's radius." },
   st_logg: { label: "Stellar Gravity (log(g))", tooltip: "The stellar surface gravity as a logarithm (base 10)." },
 }
+
+
+
+
 
 const starProperties = {
   "red-dwarf": { radius: 0.3, mass: 0.3, logg: 5.0 },
@@ -83,6 +114,19 @@ export function PlanetCreator() {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+
+
+  const LightCurveSimulation = dynamic(
+    () => import("@/components/light-curve-simulation").then((mod) => mod.LightCurveSimulation),
+    {
+      ssr: false,
+      loading: () => (
+        <div className="h-[298px] w-full flex items-center justify-center">
+          <p className="text-gray-400">Loading Simulation...</p>
+        </div>
+      )
+    }
+  )
 
   useEffect(() => {
     setIsClient(true)
