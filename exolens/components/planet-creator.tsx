@@ -613,7 +613,7 @@ export function PlanetCreator() {
           <Card className="p-6 border-[#333333] border bg-[#1b1b1b]">
             <h3 className="text-xl font-bold text-white mb-4">Transit Light Curve</h3>
             <p className="text-sm text-gray-400 mb-4">
-              This shows how the star's brightness would change if your planet passed in front of it
+              This shows how the star's brightness would change if your planet passed in front of our Sun.
             </p>
             <LightCurveSimulation parameters={simulationParams} />
           </Card>

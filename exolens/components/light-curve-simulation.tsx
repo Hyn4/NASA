@@ -1,143 +1,237 @@
-"use client"
+'use client'
 
-import { useEffect, useRef } from "react"
-import type { PlanetParameters } from "./planet-creator"
+import { useMemo } from 'react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import type { PlanetSimulationParameters } from './planet-creator'
 
 interface LightCurveSimulationProps {
-  parameters: PlanetParameters
+  parameters: PlanetSimulationParameters
 }
 
 export function LightCurveSimulation({ parameters }: LightCurveSimulationProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Calcular a curva de luz do trânsito
+  const { lightCurveData, transitDepth, transitDuration, maxDepthPercent } = useMemo(() => {
+    const { radius } = parameters
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    // Constantes
+    const EARTH_RADIUS_KM = 6371 // km
+    const SUN_RADIUS_KM = 696000 // km
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    // Raio do planeta em km
+    const planetRadiusKm = radius * EARTH_RADIUS_KM
 
-    const width = canvas.width
-    const height = canvas.height
+    // Calcular a profundidade do trânsito
+    // Transit depth = (Rp / Rs)²
+    const radiusRatio = planetRadiusKm / SUN_RADIUS_KM
+    const depth = Math.pow(radiusRatio, 2)
+    const depthPpm = depth * 1e6 // em partes por milhão
+    const depthPercent = depth * 100 // em porcentagem
 
-    ctx.clearRect(0, 0, width, height)
+    // Duração do trânsito (aproximada para visualização)
+    // Para o Sol, vamos assumir ~13 horas como referência (como a Terra)
+    const transitDurationHours = 13 * Math.sqrt(radius) // escala com √raio
 
-    // Calculate transit depth based on planet and star radii
-    const starRadius = 1.0 // Solar radii
-    const planetRadius = parameters.radius * 0.00916 // Convert Earth radii to Solar radii
-    const transitDepth = Math.pow(planetRadius / starRadius, 2) * 100 // Percentage
+    // Gerar pontos da curva de luz
+    const points = 200
+    const data: Array<{ time: number; brightness: number; phase: string }> = []
 
-    // Draw axes
-    ctx.strokeStyle = "#666"
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(50, 50)
-    ctx.lineTo(50, height - 50)
-    ctx.lineTo(width - 50, height - 50)
-    ctx.stroke()
+    // Tempo total da observação (3x a duração do trânsito para contexto)
+    const totalTime = transitDurationHours * 3
+    const timeStep = totalTime / points
 
-    // Draw labels
-    ctx.fillStyle = "#999"
-    ctx.font = "14px sans-serif"
-    ctx.fillText("Brightness", 10, 30)
-    ctx.fillText("Time", width - 80, height - 20)
-    ctx.fillText("100%", 10, height - 50)
-    ctx.fillText(`${(100 - transitDepth).toFixed(2)}%`, 10, height - 50 + transitDepth * 3)
+    // Início e fim do trânsito
+    const transitStart = totalTime / 3
+    const transitEnd = transitStart + transitDurationHours
 
-    const numPoints = 200
-    const dataPoints: { x: number; y: number }[] = []
-    const baselineY = height - 50
-    const transitWidth = 100
-    const transitStart = width / 2 - transitWidth / 2
-    const transitEnd = width / 2 + transitWidth / 2
+    for (let i = 0; i < points; i++) {
+      const time = i * timeStep
+      let brightness = 1.0 // 100% de brilho (normalizado)
+      let phase = 'before'
 
-    for (let i = 0; i < numPoints; i++) {
-      const x = 50 + (i / numPoints) * (width - 100)
-      let y = baselineY
+      if (time >= transitStart && time <= transitEnd) {
+        // Durante o trânsito
+        const transitProgress = (time - transitStart) / transitDurationHours
 
-      // Add transit dip
-      if (x >= transitStart && x <= transitEnd) {
-        const transitProgress = (x - transitStart) / transitWidth
+        // Usar uma função suave para entrada e saída (ingress/egress)
+        // Simular o efeito de limb darkening
+        let transitFactor = 0
 
-        // Smooth ingress and egress
         if (transitProgress < 0.1) {
-          const ingressProgress = transitProgress / 0.1
-          y = baselineY + transitDepth * 3 * ingressProgress
+          // Ingress (entrada) - 10% do tempo
+          transitFactor = depth * (transitProgress / 0.1)
+          phase = 'ingress'
         } else if (transitProgress > 0.9) {
-          const egressProgress = (1 - transitProgress) / 0.1
-          y = baselineY + transitDepth * 3 * egressProgress
+          // Egress (saída) - 10% do tempo
+          transitFactor = depth * ((1 - transitProgress) / 0.1)
+          phase = 'egress'
         } else {
-          y = baselineY + transitDepth * 3
+          // Trânsito completo (flat bottom)
+          transitFactor = depth
+          phase = 'transit'
         }
+
+        brightness = 1.0 - transitFactor
+      } else if (time > transitEnd) {
+        phase = 'after'
       }
 
-      // Add realistic noise (photon noise)
-      const noise = (Math.random() - 0.5) * 2 // ±1 pixel noise
-      y += noise
+      // Adicionar um pouco de ruído realista (variação estelar)
+      const noise = (Math.random() - 0.5) * 0.0001
+      brightness += noise
 
-      dataPoints.push({ x, y })
+      data.push({
+        time: parseFloat(time.toFixed(2)),
+        brightness: parseFloat((brightness * 100).toFixed(6)), // converter para porcentagem
+        phase
+      })
     }
 
-    // Draw data points
-    ctx.fillStyle = "#4169e1"
-    dataPoints.forEach((point) => {
-      ctx.beginPath()
-      ctx.arc(point.x, point.y, 2, 0, Math.PI * 2)
-      ctx.fill()
-    })
-
-    // Draw best-fit line through the data
-    ctx.strokeStyle = "#ff6b4a"
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(dataPoints[0].x, dataPoints[0].y)
-
-    // Use moving average for smooth line
-    const windowSize = 5
-    for (let i = 0; i < dataPoints.length; i++) {
-      const start = Math.max(0, i - Math.floor(windowSize / 2))
-      const end = Math.min(dataPoints.length, i + Math.ceil(windowSize / 2))
-      const avgY = dataPoints.slice(start, end).reduce((sum, p) => sum + p.y, 0) / (end - start)
-      ctx.lineTo(dataPoints[i].x, avgY)
+    return {
+      lightCurveData: data,
+      transitDepth: depthPpm,
+      transitDuration: transitDurationHours,
+      maxDepthPercent: depthPercent
     }
-    ctx.stroke()
+  }, [parameters.radius])
 
-    // Draw transit depth annotation
-    ctx.strokeStyle = "#00d9ff"
-    ctx.setLineDash([5, 5])
-    ctx.beginPath()
-    ctx.moveTo(width - 100, baselineY)
-    ctx.lineTo(width - 100, baselineY + transitDepth * 3)
-    ctx.stroke()
-    ctx.setLineDash([])
+  // Tooltip customizado
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="bg-[#1b1b1b] border border-[#404040] p-3 rounded-lg shadow-lg">
+          <p className="text-white text-sm font-semibold mb-1">
+            Time: {data.time.toFixed(2)} hours
+          </p>
+          <p className="text-blue-400 text-sm">
+            Brightness: {data.brightness.toFixed(4)}%
+          </p>
+          <p className="text-gray-400 text-xs mt-1 capitalize">
+            Phase: {data.phase}
+          </p>
+        </div>
+      )
+    }
+    return null
+  }
 
-    ctx.fillStyle = "#00d9ff"
-    ctx.font = "12px sans-serif"
-    ctx.fillText(`Depth: ${transitDepth.toFixed(3)}%`, width - 150, baselineY + transitDepth * 3 + 20)
-  }, [parameters])
+  // Calcular limites do eixo Y para melhor visualização
+  const minBrightness = Math.min(...lightCurveData.map(d => d.brightness))
+  const maxBrightness = 100
+  const yAxisPadding = (maxBrightness - minBrightness) * 0.1
+  const yMin = Math.max(minBrightness - yAxisPadding, 99.9) // não ir abaixo de 99.9%
+  const yMax = 100.05 // pequeno padding no topo
 
   return (
-    <div className="w-full">
-      <canvas ref={canvasRef} width={600} height={300} className="w-full h-auto border border-border rounded-lg" />
-      <div className="mt-4 text-sm text-muted-foreground space-y-2">
-        <p>
-          <span className="font-semibold text-foreground">Transit Depth:</span>{" "}
-          {(Math.pow((parameters.radius * 0.00916) / 1.0, 2) * 100).toFixed(4)}%
+    <div className="space-y-4">
+      {/* Informações do trânsito */}
+      <div className="grid grid-cols-2 gap-4 p-4 bg-[#2c2c2c] rounded-lg border border-[#404040]">
+        <div>
+          <p className="text-xs text-gray-400 mb-1">Transit Depth</p>
+          <p className="text-lg font-bold text-white">
+            {transitDepth.toFixed(2)} <span className="text-sm font-normal text-gray-400">ppm</span>
+          </p>
+          <p className="text-xs text-blue-400">
+            ({maxDepthPercent.toFixed(4)}% brightness drop)
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400 mb-1">Transit Duration</p>
+          <p className="text-lg font-bold text-white">
+            {transitDuration.toFixed(2)} <span className="text-sm font-normal text-gray-400">hours</span>
+          </p>
+          <p className="text-xs text-gray-400">
+            Planet radius: {parameters.radius.toFixed(2)} R⊕
+          </p>
+        </div>
+      </div>
+
+      {/* Gráfico da curva de luz */}
+      <div className="w-full h-[300px] bg-[#0a0a0a] rounded-lg p-4 border border-[#333333]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={lightCurveData} margin={{ top: 10, right: 30, left: 10, bottom: 30 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
+            <XAxis
+              dataKey="time"
+              stroke="#9ca3af"
+              label={{
+                value: 'Time (hours)',
+                position: 'insideBottom',
+                offset: -10,
+                style: { fill: '#9ca3af', fontSize: 12 }
+              }}
+              tick={{ fill: '#9ca3af', fontSize: 11 }}
+            />
+            <YAxis
+              stroke="#9ca3af"
+              domain={[yMin, yMax]}
+              tickFormatter={(value) => value.toFixed(3)}
+              label={{
+                value: 'Relative Brightness (%)',
+                angle: -90,
+                position: 'insideLeft',
+                style: { fill: '#9ca3af', fontSize: 12 }
+              }}
+              tick={{ fill: '#9ca3af', fontSize: 11 }}
+              width={70}
+            />
+            <Tooltip content={<CustomTooltip />} />
+
+            {/* Linha de referência para 100% */}
+            <ReferenceLine
+              y={100}
+              stroke="#60a5fa"
+              strokeDasharray="5 5"
+              label={{
+                value: 'Baseline (100%)',
+                position: 'right',
+                fill: '#60a5fa',
+                fontSize: 10
+              }}
+            />
+
+            {/* Linha da curva de luz */}
+            <Line
+              type="monotone"
+              dataKey="brightness"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={true}
+              animationDuration={1500}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Explicação */}
+      <div className="p-3 bg-[#2c2c2c]/50 rounded-lg border border-[#404040]">
+        <p className="text-xs text-gray-400 leading-relaxed">
+          <strong className="text-white">Transit Method:</strong> When a planet passes in front of the Sun,
+          it blocks a tiny fraction of sunlight. The depth of the dip is proportional to (Planet Radius / Sun Radius)².
+          Larger planets create deeper, more detectable transits. This simulation shows the relative brightness
+          of the Sun as observed from a distant point.
         </p>
-        <p>
-          <span className="font-semibold text-foreground">Detection Difficulty:</span>{" "}
-          {parameters.radius < 1.5
-            ? "Very Hard"
-            : parameters.radius < 3
-              ? "Hard"
-              : parameters.radius < 6
-                ? "Moderate"
-                : "Easy"}
-        </p>
-        <p className="text-xs italic">
-          Blue dots represent individual brightness measurements with realistic photon noise. Red line shows the
-          best-fit model.
-        </p>
+      </div>
+
+      {/* Fases do trânsito */}
+      <div className="grid grid-cols-4 gap-2 text-center">
+        <div className="p-2 bg-[#2c2c2c] rounded border border-[#404040]">
+          <div className="w-3 h-3 bg-gray-600 rounded-full mx-auto mb-1"></div>
+          <p className="text-xs text-gray-400">Before</p>
+        </div>
+        <div className="p-2 bg-[#2c2c2c] rounded border border-yellow-500/30">
+          <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mb-1"></div>
+          <p className="text-xs text-yellow-400">Ingress</p>
+        </div>
+        <div className="p-2 bg-[#2c2c2c] rounded border border-blue-500/30">
+          <div className="w-3 h-3 bg-blue-500 rounded-full mx-auto mb-1"></div>
+          <p className="text-xs text-blue-400">Full Transit</p>
+        </div>
+        <div className="p-2 bg-[#2c2c2c] rounded border border-purple-500/30">
+          <div className="w-3 h-3 bg-purple-500 rounded-full mx-auto mb-1"></div>
+          <p className="text-xs text-purple-400">Egress</p>
+        </div>
       </div>
     </div>
   )
