@@ -40,13 +40,13 @@ export function PlanetTypes() {
     <section className="mb-24">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 text-center">Types of Exoplanets</h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+        <p className="text-center text-gray-300 mb-12 max-w-2xl mx-auto">
           Exoplanets come in many varieties, from scorching hot Jupiters to potentially habitable rocky worlds.
         </p>
 
         <div className="grid md:grid-cols-2 gap-8">
           {planetTypes.map((type) => (
-            <Card key={type.name} className="overflow-hidden border-border transition-colors ">
+            <Card key={type.name} className="overflow-hidden !drop-shadow-xl transition-colors bg-[#1b1b1b]">
               <div className={`h-48 bg-gradient-to-br ${type.color} relative`}>
                 <img
                   src={type.image || "/placeholder.svg"}
@@ -55,13 +55,13 @@ export function PlanetTypes() {
                 />
               </div>
               <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold">{type.name}</h3>
-                <p className="text-muted-foreground leading-relaxed">{type.description}</p>
+                <h3 className="text-2xl font-bold text-white">{type.name}</h3>
+                <p className="text-gray-300 leading-relaxed">{type.description}</p>
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-foreground">Key Characteristics:</p>
+                  <p className="text-sm font-semibold text-gray-300">Key Characteristics:</p>
                   <ul className="space-y-1">
                     {type.characteristics.map((char, idx) => (
-                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
                         <span>{char}</span>
                       </li>

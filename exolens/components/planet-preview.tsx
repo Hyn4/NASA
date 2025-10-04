@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import type * as THREE from "three"
 import type { PlanetParameters } from "./planet-creator"
+import { StarField } from "./star-field"
 
 interface PlanetPreviewProps {
   parameters: PlanetParameters
@@ -54,7 +55,8 @@ function Planet({ parameters, textureUrl }: { parameters: PlanetParameters; text
 export function PlanetPreview({ parameters, isGenerating, textureUrl }: PlanetPreviewProps) {
   return (
     <div className="relative">
-      <div className="w-full h-[400px] rounded-lg overflow-hidden bg-background">
+      <div className="w-full  h-[400px] rounded-lg overflow-hidden bg-gradient-to-b to-[#0f0f1a] via-[#0f0f1a] from-[#0f0f1a]">
+        
         <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
           <ambientLight intensity={0.5} />
           <pointLight position={[5, 5, 5]} intensity={1} />

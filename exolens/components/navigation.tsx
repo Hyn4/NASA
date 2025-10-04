@@ -17,11 +17,10 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname()
-
+  console.log(pathname === "/" || pathname === "/explorer" || pathname === "/about")
   return (
-    <header className="fixed h-[65px] top-0 left-0 right-0 z-50 bg-gradient-to-b to-[#0a0a0f] via-[#0f0f1a] from-[#1a1a2e] ">
-      <StarField />
-
+    <header className={`fixed h-[65px] top-0 left-0 right-0 z-50 ${ pathname === "/" || pathname === "/explorer" || pathname === "/about" ? "bg-gradient-to-b to-[#0a0a0f] via-[#0f0f1a] from-[#1a1a2e]" : "bg-[#1b1b1b]"} `}>
+      {pathname === "/" || pathname === "/explorer" || pathname === "/about" ? <StarField /> : null }
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">

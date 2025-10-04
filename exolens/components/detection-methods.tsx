@@ -53,33 +53,33 @@ export function DetectionMethods() {
     <section>
       <div className="max-w-6xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 text-center">Detection Methods</h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+        <p className="text-center text-gray-300 mb-12 max-w-2xl mx-auto">
           Astronomers have developed several ingenious techniques to find planets orbiting distant stars.
         </p>
 
         <div className="space-y-8">
           {detectionMethods.map((method, index) => (
-            <Card key={method.name} className="overflow-hidden border-border">
+            <Card key={method.name} className="overflow-hidden border-border !drop-shadow-xl bg-[#1b1b1b]">
               <div className="grid md:grid-cols-2 gap-0">
                 {/* Content side */}
                 <div className="p-8 space-y-4 order-2 md:order-1">
                   <div className="space-y-2">
                     <div className="text-sm text-accent font-semibold">Method {index + 1}</div>
-                    <h3 className="text-2xl md:text-3xl font-bold">{method.name}</h3>
+                    <h3 className="text-2xl md:text-3xl font-bold text-white">{method.name}</h3>
                   </div>
 
-                  <p className="text-muted-foreground leading-relaxed">{method.description}</p>
+                  <p className="text-gray-300 leading-relaxed">{method.description}</p>
 
                   <div className="pt-2">
                     <p className="text-sm font-semibold text-foreground mb-2">Discoveries:</p>
-                    <p className="text-primary font-bold">{method.discoveries}</p>
+                    <p className="text-gray-300 font-bold">{method.discoveries}</p>
                   </div>
 
                   <div className="pt-2">
                     <p className="text-sm font-semibold text-foreground mb-2">Advantages:</p>
                     <ul className="space-y-1">
                       {method.advantages.map((adv, idx) => (
-                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
                           <span className="text-accent mt-1">✓</span>
                           <span>{adv}</span>
                         </li>
@@ -89,11 +89,11 @@ export function DetectionMethods() {
                 </div>
 
                 {/* Animation side */}
-                <div className="bg-card/50 border-l border-border p-8 flex items-center justify-center min-h-[300px] order-1 md:order-2">
+                <div className="bg-black p-8 flex items-center justify-center min-h-[300px] order-1 md:order-2">
                   {method.component ? (
                     <method.component />
                   ) : (
-                    <div className="text-center text-muted-foreground">
+                    <div className="text-center text-gray-300">
                       <p className="text-sm">Animation coming soon</p>
                     </div>
                   )}
