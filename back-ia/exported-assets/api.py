@@ -10,13 +10,14 @@ Endpoints:
 - GET /model_info - Informações do modelo
 """
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from pydantic import BaseModel, Field, ValidationError
 from typing import List, Optional
 import joblib
 import numpy as np
 import pandas as pd
 from datetime import datetime
+import json
 
 # Inicializar FastAPI
 app = FastAPI(
@@ -242,6 +243,129 @@ def predict_batch(request: BatchPredictionRequest):
         predictions=predictions,
         total=len(predictions)
     )
+
+@app.post("/parse_json", response_model=BatchPredictionResponse)
+async def parse_json(file: UploadFile = File(...)):
+    """
+    Upload de arquivo JSON com múltiplos exoplanetas para predição em lote
+    
+    Formato esperado do JSON:
+    {
+        "exoplanets": [
+            {
+                "pl_orbper": 3.5,
+                "pl_rade": 1.2,
+                "pl_trandep": 1000.0,
+                "st_teff": 5500.0,
+                "st_rad": 1.0,
+                "st_logg": 4.5
+            },
+            {
+                "pl_orbper": 10.2,
+                "pl_rade": 2.5,
+                "pl_trandep": 1500.0,
+                "st_teff": 6000.0,
+                "st_rad": 1.2,
+                "st_logg": 4.3
+            }
+        ]
+    }
+    
+    Args:
+        file: Arquivo JSON com lista de exoplanetas
+        
+    Returns:
+        BatchPredictionResponse com todas as predições
+    """
+    if model is None or scaler is None:
+        raise HTTPException(status_code=503, detail="Modelos não carregados")
+    
+    # Validar extensão do arquivo
+    if not file.filename.endswith('.json'):
+        raise HTTPException(
+            status_code=400, 
+            detail="Arquivo deve ser .json"
+        )
+    
+    try:
+        # Ler conteúdo do arquivo
+        content = await file.read()
+        
+        # Parsear JSON
+        json_data = json.loads(content.decode('utf-8'))
+        
+        # Validar estrutura do JSON
+        if "exoplanets" not in json_data:
+            raise HTTPException(
+                status_code=400, 
+                detail="JSON deve conter chave 'exoplanets' com lista de features"
+            )
+        
+        # Validar e converter para BatchPredictionRequest
+        request = BatchPredictionRequest(exoplanets=json_data["exoplanets"])
+        
+        # Processar predições
+        predictions = []
+        
+        for idx, features in enumerate(request.exoplanets):
+            try:
+                # Converter para array
+                feature_array = np.array([[
+                    features.pl_orbper,
+                    features.pl_rade,
+                    features.pl_trandep,
+                    features.st_teff,
+                    features.st_rad,
+                    features.st_logg
+                ]])
+                
+                # Escalar e predizer
+                feature_scaled = scaler.transform(feature_array)
+                prediction = model.predict(feature_scaled)[0]
+                probabilities = model.predict_proba(feature_scaled)[0]
+                
+                prediction_label = "Confirmed Planet" if prediction == 1 else "Not Confirmed (False Positive)"
+                
+                predictions.append(PredictionResponse(
+                    prediction=int(prediction),
+                    prediction_label=prediction_label,
+                    probability=float(probabilities[prediction]),
+                    probabilities={
+                        "not_confirmed": float(probabilities[0]),
+                        "confirmed": float(probabilities[1])
+                    },
+                    timestamp=datetime.now().isoformat()
+                ))
+                
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500, 
+                    detail=f"Erro ao processar exoplaneta {idx + 1}: {str(e)}"
+                )
+        
+        return BatchPredictionResponse(
+            predictions=predictions,
+            total=len(predictions)
+        )
+        
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"JSON inválido: {str(e)}"
+        )
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=422, 
+            detail=f"Erro de validação: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erro ao processar arquivo: {str(e)}"
+        )
+    finally:
+        await file.close()
+
 
 
 # Executar com: uvicorn api:app --reload --host 0.0.0.0 --port 8000
