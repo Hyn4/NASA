@@ -367,6 +367,7 @@ export function EarthSimilarityCalculator({ initialData, onClear }: EarthSimilar
                             </div>
                         </div>
                     </Card>
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed">Run Analysis</Button>
                 </div>
 
                 {/* Results */}

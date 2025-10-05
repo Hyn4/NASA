@@ -263,29 +263,29 @@ function buildTexturePrompt(params: {
     : "with moderate-scale surface features and varied topography"
 
   // Prompt final atualizado com a temperatura correta
-  const fullPrompt = `Realistic flat texture map of a ${baseDescription}, designed for 3D sphere wrapping (equirectangular projection).
+const fullPrompt = `Realistic flat texture map of a ${baseDescription}, designed for 3D sphere wrapping.
 
-FORMAT: Seamless tileable 2D texture map in 2:1 aspect ratio (width:height), suitable for UV sphere mapping. The texture should wrap horizontally and tile vertically without visible seams.
+// --- INÍCIO DAS ALTERAÇÕES NO PROMPT ---
+FORMAT: Seamless, tileable, SQUARE 2D texture map (1:1 aspect ratio). The texture MUST be designed so the left edge connects perfectly to the right edge to allow for horizontal repeating.
 
 STYLE: ${textureStyle}, photorealistic surface rendering with accurate color grading. Natural lighting with soft shadows. High detail level showing microscopic surface variations.
 
-SURFACE FEATURES: ${surfaceFeatures}, ${gravityDesc}. Features should be distributed across the entire map with polar distortion considered (features stretched at top/bottom edges of the map).
+SURFACE FEATURES: ${surfaceFeatures}, ${gravityDesc}. Features should be distributed evenly across the square map.
 
 ATMOSPHERE & WEATHER: ${atmosphere}. ${planetType !== "Gas Giant" && planetType !== "Neptune-like" ? "Clouds should be rendered as a semi-transparent layer if present." : ""}
 
 COLOR & LIGHTING: ${lightingDesc}. Planet's estimated surface temperature is ${planetSurfaceTemp.toFixed(0)}K (from a ${starTemperature}K star at ${distance} AU), which directly influences the color palette and surface state.
 
 TECHNICAL SPECIFICATIONS:
-- Equirectangular projection (latitude-longitude grid)
 - Seamless horizontal wrap (left edge connects to right edge)
-- Top edge represents north pole, bottom edge represents south pole
-- Polar regions should show appropriate feature distortion
 - No borders, frames, text overlays, or UI elements
 - No planet sphere visible - this is a flat unwrapped surface map
 - High resolution suitable for close-up 3D rendering
 - Clean, scientifically accurate representation
 
-OUTPUT: Pure texture map only, black background around the rectangular map area, ready for 3D texture application.`
+OUTPUT: Pure square texture map only, ready for 3D texture application.
+-
+`
 
   return fullPrompt
 }
