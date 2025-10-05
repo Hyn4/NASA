@@ -13,6 +13,7 @@ const navItems = [
   { href: "/methods", label: "Detection Methods" },
   { href: "/laboratory", label: "Planetary Lab" },
   { href: "/about", label: "About" },
+  { href: "/whereLooking", label: "Where Looking" },
 ]
 
 export function Navigation() {
