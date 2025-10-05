@@ -134,36 +134,45 @@ export function PlanetCreator() {
 
   useEffect(() => {
     const deriveSimulationParameters = () => {
+      // Pega os valores do formulário como números
+      const pl_orbper = parseFloat(analysisParams.pl_orbper) || 0
       const pl_rade = parseFloat(analysisParams.pl_rade) || 0
       const st_teff = parseFloat(analysisParams.st_teff) || 0
       const st_rad = parseFloat(analysisParams.st_rad) || 0
       const st_logg = parseFloat(analysisParams.st_logg) || 0
-      const pl_orbper = parseFloat(analysisParams.pl_orbper) || 0
 
       if (!pl_rade || !st_teff || !st_rad || !st_logg || !pl_orbper) {
         return
       }
 
+      // --- INÍCIO DA NOVA LÓGICA DE CÁLCULO ---
+
+      // Passo 1: Calcular a massa da estrela em massas solares.
+      // Usamos a fórmula da gravidade: g = G*M/R². Comparando com o sol, podemos simplificar para:
+      // MassaEstrela = (g_estrela / g_sol) * RaioEstrela²
+      const stellarMassInSolarMasses = (Math.pow(10, st_logg) / Math.pow(10, 4.44)) * Math.pow(st_rad, 2);
+
+      // Passo 2: Calcular a distância em AU (Unidades Astronômicas) usando a Terceira Lei de Kepler.
+      // Distância³ = Período² * Massa (Período em anos, Massa em massas solares)
+      const orbitalPeriodInYears = pl_orbper / 365.25;
+      const distanceInAU = Math.cbrt(Math.pow(orbitalPeriodInYears, 2) * stellarMassInSolarMasses);
+      
+      // --- FIM DA NOVA LÓGICA DE CÁLCULO ---
+
+      // Classifica o tipo de estrela com base na temperatura (isso continua igual)
       const starType: PlanetSimulationParameters["starType"] =
         st_teff < 4000 ? "red-dwarf" : st_teff < 7000 ? "sun-like" : "blue-giant"
 
+      // A sua aproximação de massa do planeta (continua igual)
       const mass = Math.pow(pl_rade, 2)
 
-      const g_star_cgs = Math.pow(10, st_logg)
-      const r_star_cm = st_rad * 6.957e10
-      const G_cgs = 6.6743e-8
-      const m_star_g = (g_star_cgs * Math.pow(r_star_cm, 2)) / G_cgs
-      const m_star_solar = m_star_g / 1.989e33
-
-      const p_years = pl_orbper / 365.25
-      const distance_au = Math.cbrt(Math.pow(p_years, 2) * m_star_solar)
-
+      // Atualiza o estado dos parâmetros de simulação com a distância calculada
       setSimulationParams({
         radius: pl_rade,
         mass: isNaN(mass) ? 1 : mass,
-        temperature: st_teff,
+        temperature: st_teff, // Importante: esta é a temperatura da ESTRELA
         starType: starType,
-        distance: isNaN(distance_au) ? 1 : distance_au,
+        distance: isNaN(distanceInAU) ? 1 : distanceInAU, // AQUI USAMOS O VALOR CALCULADO!
       })
     }
 
@@ -316,6 +325,28 @@ export function PlanetCreator() {
           }),
         ])
 
+        // Lê o ReadableStream manualmente e converte para JSON
+        let analysisData;
+        if (analysisResponse.body) {
+          const reader = analysisResponse.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let responseText = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            responseText += decoder.decode(value, { stream: true });
+          }
+          responseText += decoder.decode(); // flush
+          try {
+            analysisData = JSON.parse(responseText);
+            console.log(analysisData)
+          } catch (e) {
+            throw new Error("Failed to parse analysis response as JSON");
+          }
+        } else {
+          analysisData = await analysisResponse.json();
+        }
+
         setGeneratedTexture({ url: textureResult.textureUrl, prompt: textureResult.prompt })
         toast({
           title: "Planet Texture Generated!",
@@ -323,11 +354,9 @@ export function PlanetCreator() {
         })
 
         if (!analysisResponse.ok) {
-          const errorData = await analysisResponse.json()
-          throw new Error(errorData.error || "Analysis failed")
+          throw new Error(analysisData.error || "Analysis failed");
         }
 
-        const analysisData = await analysisResponse.json()
         setAnalysisResult(analysisData)
         toast({
           title: "Analysis Complete!",
@@ -575,13 +604,13 @@ export function PlanetCreator() {
                 <p className="text-gray-300">
                   <strong>Prediction:</strong>{" "}
                   <span
-                    className={`font-bold ${analysisResult.prediction === "Exoplanet" ? "text-green-400" : "text-red-400"}`}
+                    className={`font-bold ${analysisResult.prediction === 1 ? "text-green-400" : "text-red-400"}`}
                   >
-                    {analysisResult.prediction}
+                    {analysisResult.prediction === 1 ? "Exoplanet" : "Not an Exoplanet"}
                   </span>
                 </p>
                 <p className="text-gray-300">
-                  <strong>Confidence:</strong> {(analysisResult.confidence * 100).toFixed(2)}%
+                  <strong>Confidence:</strong> {(analysisResult.probability * 100).toFixed(2).replace('.', ',') + '%'}
                 </p>
                 <p className="text-xs text-gray-400 pt-2">
                   This analysis is based on a machine learning model trained on confirmed exoplanet data.
