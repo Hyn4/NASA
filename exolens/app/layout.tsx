@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   title: "ExoVerse 3D Explorer | Explore Exoplanets in 3D",
   description:
     "An interactive journey through real exoplanet data. Visualize distant worlds, understand detection methods, and create your own planets.",
-    generator: 'v0.app'
+    generator: 'v0.app',
+  icons: {
+    icon: '/favicon.ico'
+  }
 }
 
 export default function RootLayout({
