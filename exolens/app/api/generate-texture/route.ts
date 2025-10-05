@@ -1,15 +1,17 @@
 // app/api/generate-texture/route.ts
 import { NextResponse } from "next/server"
+import { GoogleAuth } from 'google-auth-library'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { radius, temperature, mass, starType, planetType } = body
+    const { radius, temperature, mass, starType, planetType, distance } = body
+    console.log(body)
 
     // Build a detailed prompt for AI image generation
-    const prompt = buildTexturePrompt({ radius, temperature, mass, starType, planetType })
+    const prompt = buildTexturePrompt({ radius, temperature, mass, starType, planetType, distance })
 
-    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
+    const GOOGLE_API_KEY = "AIzaSyDA_gU5rgXZT4CBXf11I9otd01ZnybMpU8"
 
     if (!GOOGLE_API_KEY) {
       console.warn('Google API key not configured, returning placeholder')
@@ -21,12 +23,41 @@ export async function POST(request: Request) {
       })
     }
 
+    const serviceAccountKey = {
+      "type": "service_account",
+      "project_id": "exolens",
+      "private_key_id": "4d2812b0878af5f9a75abf62fd7fe5693e029be6",
+      "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDAzK7aGQGIu2QE\ngRb6sstYdgu4tnHD5KvxROZLx5muS2yldmd/CEKkFxLLUEzhlsteoVkML9rXXzJG\n1HjjALjRL7eL56uyehA5yJd4/HSZg3n6ZnmcR6ZCgL90AuAl6pH/Hz9C8L3e3PmW\nLBogTnSqqzOwvrMYa4S1NpoqOWXJqArMGB7xZGhUuPpvXCUWNIWmKy+rmxbK1iyh\nj8FF9iSL5bWSHJoYeHKcdvPRuLCs5Xk4gySyZb2Wrlv0O6vzE5Gkylx/DgLZkYVg\nJSwpz+Z2aAZiE6hqrlmcOnzHmp+Va4DzqQb41E6cKgSVShvhdaTtlTvIxn10HdhK\nJ52zHWtZAgMBAAECggEAFAObeh4C7AIB77rD2yoA1HHKpTXhSPPdyom7u22gvThs\nsp+APm5p1pVjmNIA7SElgvEOaKa2Gcny0un/E5eRV/vTWrVlvD0SHqF9YeyZIQ+G\nM9F7+dZxQrGRTlZ3FNCNL9X7T/RkTXSUfzucSbLDRy1HDCe7uUL+D3630b7MG3sF\nXqyT7IPyNijNCUlf4aOBJLBX5Jxpr+ralNLhhQrQNalgRBOvLT3LfGyFwgKgByVN\n2ASIizQkMLRTA5BwQly3Hc1jz/8UlrV2rgbePb+m8VNBMiWdYqwcLOjA8cvc1IHj\nhoXzbItZNv9PkEJ00NxUr28hJYbW4qwuvHn/8moyQQKBgQDmCTG4dUMEh2hD07zB\nhOGsywA4pLtYwXoPqYnp8l/Q1U30yObfR9tciRuyg8esRLCXh+BiiOubMTVarEk7\nx41gUW9TjBBFp3cYQ14ZMjdUN72dj0yhhQCzE2J6HBpOik3Ht70ByXE3xY7aY+Ui\niiEXLk5DP67+0bxEsNHkRkh7+QKBgQDWj46eDzydh8uLysjb+IaRKlvVJyrDc769\nL88w1u2p/P5Z+cgPRrHZUxv0xmy9fCDJvuuuaEEVURFY9gLx9c9E5sbUGno9tPml\nZX531kBQgfU0s41szgKCg22I+cIWYnRQ9TLxkjWm2b9G64tyZpe/gtVFhMsN9B5M\nmKh20MKCYQKBgGB57q5sD6VwnNwFi56l+ngb04XuINzCmEzFUCAcFO9i5oUJVTrD\nyk5u+nzOJAot7NpAlGz++8Fky/mxVC2MLdD9lnE1xwVPjPVSG775fpcFobLZDMyZ\nGYgBU0XfT3EtNB3VA6IiOCep5ZXWW502zVYJh61QojYhBJLSjdTtXS0RAoGAXDcw\n/Z/g1nfRtNBACcLD20pQU8lUqNJrTRZqPzxwwxmYHAWtxVsF/zioEEjj3YCm+u6S\njtACAO5pvUlmtKWIIr3pAKosla7diQeZFlpAJBnm0HLHOtdD3uIrxq5Ji6NfCJiJ\n/6duZbq6afm8YjvTxpytmwZa2zFrgFIwPXi10KECgYBPosvyuP1CmN5MWUiVpY+r\n30KCcYvxjDtv3F/1tjuJiRMXKVjh1HIjNItxu3IPGjBpbsVDGBTXbBTFU4rJAqqP\nrjDd411WN0SOy50bjqGo4vr78WITME+J4bAuqc8FLU2sVZ13cg/SuOT+VjBGcuSA\n0/+ikp1qVOETbN7lrwRFHA==\n-----END PRIVATE KEY-----\n",
+      "client_email": "otavio-augusto@exolens.iam.gserviceaccount.com",
+      "client_id": "100989298617681419486",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "token_uri": "https://oauth2.googleapis.com/token",
+      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/otavio-augusto%40exolens.iam.gserviceaccount.com",
+      "universe_domain": "googleapis.com"
+    }
+
+
+    const auth = new GoogleAuth({
+      credentials: serviceAccountKey,
+      scopes: 'https://www.googleapis.com/auth/cloud-platform',
+    });
+    const accessToken = await auth.getAccessToken();
+
+    if (!accessToken) {
+        throw new Error('Failed to acquire an access token.');
+    }
+
     // Call Google Imagen API to generate the texture
     const imagenResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GOOGLE_API_KEY}`,
+      // A URL foi atualizada para o endpoint do Vertex AI
+      // Substitua ${LOCATION}, ${PROJECT_ID} e ${MODEL_ID} pelos seus valores
+      `https://us-central1-aiplatform.googleapis.com/v1/projects/exolens/locations/us-central1/publishers/google/models/imagen-3.0-generate-002:predict`,
       {
         method: 'POST',
         headers: {
+          // A autenticação agora é feita com um Bearer Token
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -38,12 +69,12 @@ export async function POST(request: Request) {
           parameters: {
             sampleCount: 1,
             aspectRatio: "1:1",
-            safetyFilterLevel: "block_some",
-            personGeneration: "dont_allow"
+            // Os parâmetros de segurança mudaram, use as novas configurações se necessário
           },
         }),
       }
     )
+
 
     if (!imagenResponse.ok) {
       const errorText = await imagenResponse.text()
@@ -62,6 +93,12 @@ export async function POST(request: Request) {
     
     // Extract base64 image from response
     const imageBase64 = imagenData.predictions[0].bytesBase64Encoded
+
+    // Salva o base64 em um arquivo para debug
+    const fs = require('fs');
+    const debugFilePath = process.cwd() + '/debug_texture_base64.txt';
+    fs.writeFileSync(debugFilePath, `data:image/png;base64,${imageBase64}`);
+
     const imageUrl = `data:image/png;base64,${imageBase64}`
 
     return NextResponse.json({
@@ -85,125 +122,170 @@ export async function POST(request: Request) {
 
 function buildTexturePrompt(params: {
   radius: number
-  temperature: number
+  temperature: number // Continua sendo a temperatura da ESTRELA
   mass: number
   starType: string
   planetType: string
+  distance: number // NOVO PARÂMETRO: Distância do planeta à estrela em AU
 }): string {
-  const { radius, temperature, mass, starType, planetType } = params
+  // Renomeia 'temperature' para 'starTemperature' para clareza e adiciona 'distance'
+  const { radius, temperature: starTemperature, mass, starType, planetType, distance } = params
+
+  // Função auxiliar para obter o raio relativo da estrela (Sol = 1)
+  const getStarRadius = (type: string): number => {
+    switch (type) {
+      case "red-dwarf": return 0.3;
+      case "blue-giant": return 10;
+      default: return 1.0; // sun-like
+    }
+  };
+
+  // Função para calcular uma temperatura de superfície estimada para o planeta
+  const calculatePlanetSurfaceTemp = (starTemp: number, starRad: number, dist: number): number => {
+    // Evita divisão por zero para planetas muito próximos
+    if (dist <= 0) return 10000; 
+
+    const earthEquilibriumTemp = 288; // Temp. média da Terra em Kelvin (~15°C)
+    const sunTemp = 5778;
+
+    // Fórmula de temperatura de equilíbrio simplificada: T_planeta ∝ sqrt(R_estrela) * T_estrela / sqrt(D_planeta)
+    // Isso modela como a energia recebida diminui com a distância.
+    const planetTemp = earthEquilibriumTemp * Math.sqrt(starRad) * (starTemp / sunTemp) / Math.sqrt(dist);
+    return planetTemp;
+  };
+  
+  const starRadius = getStarRadius(starType);
+  // **A VARIÁVEL-CHAVE:** A temperatura calculada da superfície do planeta
+  const planetSurfaceTemp = calculatePlanetSurfaceTemp(starTemperature, starRadius, distance);
 
   let baseDescription = ""
   let surfaceFeatures = ""
   let atmosphere = ""
-  let lighting = ""
   let textureStyle = ""
   let gravity = mass / (radius * radius)
 
-  // Determine texture style based on temperature
+  // --- TODA A LÓGICA ABAIXO AGORA USA 'planetSurfaceTemp' ---
+
+  // Determina o efeito da temperatura na superfície
   let temperatureEffect = ""
-  if (temperature > 1500) {
+  if (planetSurfaceTemp > 1500) {
     temperatureEffect = "molten lava surface with glowing magma cracks and volcanic eruptions"
-  } else if (temperature > 800) {
+  } else if (planetSurfaceTemp > 800) {
     temperatureEffect = "cracked basalt surface with volcanic features and dark lava flows"
-  } else if (temperature > 400) {
+  } else if (planetSurfaceTemp > 400) {
     temperatureEffect = "dry rocky regolith with impact craters and barren landscape"
-  } else if (temperature > 273) {
-    temperatureEffect = "rocky surface with weathering patterns and mineral deposits"
-  } else if (temperature > 200) {
+  } else if (planetSurfaceTemp > 273) { // Ponto de congelamento da água
+    temperatureEffect = "rocky surface with weathering patterns and mineral deposits, potential for liquid water"
+  } else if (planetSurfaceTemp > 200) {
     temperatureEffect = "partially frozen surface with ice formations and frozen lakes"
   } else {
     temperatureEffect = "completely frozen icy crust with methane ice and nitrogen frost"
   }
 
-  // Determine planet characteristics based on type and parameters
+  // Determina as características do planeta com base no tipo e na temperatura da superfície
   if (planetType === "Gas Giant") {
-    baseDescription = "A massive gas giant planet"
-    surfaceFeatures = `turbulent atmospheric storms, Jupiter-like colorful cloud bands with ${gravity > 2 ? 'fine-grained compressed' : 'large swirling'} storm systems`
-    atmosphere = "thick hydrogen and helium atmosphere with dramatic storm vortices and color variations from ammonia and methane"
-    textureStyle = "flat graphic style with bold banded patterns, cell-shaded cloud layers, vibrant colors"
+    baseDescription = "gas giant"
+    surfaceFeatures = `turbulent atmospheric storms, horizontal cloud bands similar to Jupiter with ${gravity > 2 ? 'fine-grained compressed' : 'large swirling'} storm systems, great red spot-like vortices`
+    atmosphere = "thick hydrogen and helium atmosphere with dramatic color variations from ammonia, methane, and phosphorus compounds"
+    textureStyle = "seamless tileable texture map with bold horizontal banded patterns, smooth color transitions between bands"
   } else if (planetType === "Neptune-like") {
-    baseDescription = "An ice giant planet"
-    surfaceFeatures = `methane-rich clouds with subtle atmospheric bands and ${gravity > 1.5 ? 'compressed' : 'expanded'} atmospheric features`
-    atmosphere = "thick atmosphere dominated by methane giving deep blue-green coloration with high-altitude white methane clouds"
-    textureStyle = "flat graphic style with smooth gradients, blue-green palette, minimal surface detail"
+    baseDescription = "ice giant"
+    surfaceFeatures = `methane-rich clouds with subtle horizontal atmospheric bands, ${gravity > 1.5 ? 'compressed' : 'expanded'} storm features, high-altitude cirrus-like formations`
+    atmosphere = "thick atmosphere dominated by methane giving deep blue-green coloration with wispy white clouds"
+    textureStyle = "seamless tileable texture map with smooth gradients, blue-green dominant palette, subtle cloud streaks"
   } else if (planetType === "Super-Earth") {
-    if (temperature < 273) {
-      baseDescription = "A large rocky super-Earth with frozen surface"
-      surfaceFeatures = `frozen oceans covering most surface, massive ice sheets, ${gravity > 2 ? 'compressed and flat' : 'tall jagged'} ice formations, visible rocky continents through ice`
-      atmosphere = "thin atmosphere with ice crystal hazes"
-      textureStyle = "flat graphic style with white-blue ice textures, subtle shadows, clean edges"
-    } else if (temperature < 373) {
-      baseDescription = "A large Earth-like super-Earth with oceans"
-      surfaceFeatures = `vast blue oceans, large continents with varied terrain, white cloud formations, ${gravity > 2 ? 'flat plains' : 'mountain ranges'}`
-      atmosphere = "thick Earth-like atmosphere with water vapor clouds and dynamic weather systems"
-      textureStyle = "flat graphic style with blue oceans, green-brown landmasses, white cloud wisps"
+    if (planetSurfaceTemp < 273) {
+      baseDescription = "large frozen rocky super-Earth"
+      surfaceFeatures = `frozen ocean surfaces, massive ice sheets with cracks and pressure ridges, ${gravity > 2 ? 'flat ice plains' : 'jagged ice mountains'}, exposed rocky continents with snow cover`
+      atmosphere = "thin atmosphere creating frost patterns and ice crystal formations"
+      textureStyle = "seamless tileable texture map with white-blue ice textures, glacial flow patterns, polar caps"
+    } else if (planetSurfaceTemp < 373) {
+      baseDescription = "large Earth-like super-Earth with liquid water"
+      surfaceFeatures = `vast blue oceans with wave patterns, large continents with varied biomes, mountain ranges, river systems, forest regions, desert areas, polar ice caps, ${gravity > 2 ? 'flat plains' : 'mountain ranges'}`
+      atmosphere = "white cloud formations, cyclone systems, scattered cumulus clouds"
+      textureStyle = "seamless tileable texture map with vivid blue oceans, green-brown continents, white clouds as overlay"
     } else {
-      baseDescription = "A large hot super-Earth with volcanic surface"
-      surfaceFeatures = `${temperatureEffect}, active volcanoes, extensive lava plains, minimal water`
-      atmosphere = "thick atmosphere with volcanic ash plumes and heat shimmer"
-      textureStyle = "flat graphic style with red-orange lava glow, dark rocky textures, dramatic lighting"
+      baseDescription = "large hot volcanic super-Earth"
+      surfaceFeatures = `${temperatureEffect}, active volcanoes with lava flows, extensive volcanic plains, impact craters, no water bodies`
+      atmosphere = "volcanic ash clouds and heat haze patterns"
+      textureStyle = "seamless tileable texture map with red-orange volcanic glow, dark basalt textures, dramatic lava rivers"
     }
   } else {
     // Terrestrial
-    if (temperature < 200) {
-      baseDescription = "A frozen terrestrial planet"
-      surfaceFeatures = `${temperatureEffect}, completely frozen surface with no liquid water, nitrogen and methane ice formations`
-      atmosphere = "very thin atmosphere with frozen gases, minimal cloud cover"
-      textureStyle = "flat graphic style with pale blue-white ice, clean smooth textures"
-    } else if (temperature < 273) {
-      baseDescription = "A cold terrestrial planet"
-      surfaceFeatures = `${temperatureEffect}, large polar ice caps, frozen regions dominating the surface, some exposed rocky areas`
-      atmosphere = "thin atmosphere with ice crystal clouds"
-      textureStyle = "flat graphic style with ice-dominated palette, subtle terrain variations"
-    } else if (temperature < 373) {
-      baseDescription = "An Earth-like terrestrial planet"
-      surfaceFeatures = `${temperatureEffect}, blue liquid water oceans, diverse continents, visible cloud patterns, potentially habitable conditions`
-      atmosphere = "breathable nitrogen-oxygen atmosphere with water vapor and dynamic clouds"
-      textureStyle = "flat graphic style with vivid blues, greens and browns, white clouds"
-    } else if (temperature < 600) {
-      baseDescription = "A hot terrestrial planet"
-      surfaceFeatures = `${temperatureEffect}, dry rocky surface, desert-like terrain with sand dunes, no surface water, deep impact craters`
-      atmosphere = "hot dry atmosphere with dust storms"
-      textureStyle = "flat graphic style with red-brown desert tones, minimal features"
-    } else if (temperature < 1000) {
-      baseDescription = "A very hot terrestrial planet"
-      surfaceFeatures = `${temperatureEffect}, scorched surface with heat cracks, extreme volcanic activity, glowing hot spots`
-      atmosphere = "thick toxic atmosphere with sulfur compounds and extreme greenhouse effect"
-      textureStyle = "flat graphic style with orange-red heat signature, dark volcanic textures"
+    if (planetSurfaceTemp < 200) {
+      baseDescription = "frozen terrestrial world"
+      surfaceFeatures = `${temperatureEffect}, completely frozen surface with methane and nitrogen ice, no liquid water, smooth ice plains with minimal features`
+      atmosphere = "very thin atmosphere creating minimal frost patterns"
+      textureStyle = "seamless tileable texture map with pale blue-white ice, smooth uniform textures, subtle albedo variations"
+    } else if (planetSurfaceTemp < 273) {
+      baseDescription = "cold terrestrial world"
+      surfaceFeatures = `${temperatureEffect}, large polar ice caps extending toward equator, frozen regions, exposed rocky terrain, glacial formations`
+      atmosphere = "thin atmosphere with ice crystal cloud patterns"
+      textureStyle = "seamless tileable texture map with ice-dominated palette, polar regions clearly visible, rocky patches"
+    } else if (planetSurfaceTemp < 373) {
+      baseDescription = "Earth-like terrestrial world with liquid water"
+      surfaceFeatures = `${temperatureEffect}, blue liquid water oceans, diverse continents with varied terrain, mountain ranges, valleys, plains, river deltas, polar ice caps`
+      atmosphere = "scattered white clouds, storm systems, dynamic weather patterns"
+      textureStyle = "seamless tileable texture map with vivid blue oceans (60-70% coverage), green and brown landmasses, white polar caps, cloud layer"
+    } else if (planetSurfaceTemp < 600) {
+      baseDescription = "hot, dry terrestrial world"
+      surfaceFeatures = `${temperatureEffect}, extensive desert terrain with dune fields, no surface water, deep impact craters, weathered highlands`
+      atmosphere = "hot dry atmosphere with occasional dust storm patterns"
+      textureStyle = "seamless tileable texture map with red-brown desert tones, orange sand, dark rocky regions, minimal contrast"
+    } else if (planetSurfaceTemp < 1000) {
+      baseDescription = "very hot volcanic terrestrial world"
+      surfaceFeatures = `${temperatureEffect}, scorched surface with thermal stress cracks, extreme volcanic activity, glowing hot spots, lava lakes`
+      atmosphere = "thick toxic atmosphere with sulfur-tinted clouds"
+      textureStyle = "seamless tileable texture map with orange-red heat signature, dark volcanic plains, glowing lava features"
     } else {
-      baseDescription = "An extremely hot lava world"
-      surfaceFeatures = `${temperatureEffect}, molten surface with rivers of lava, constant volcanic eruptions, glowing magma oceans`
-      atmosphere = "ultra-thick toxic atmosphere with vaporized rock and extreme heat distortion"
-      textureStyle = "flat graphic style with bright glowing lava, deep red-orange color scheme, dramatic contrast"
+      baseDescription = "extremely hot lava world"
+      surfaceFeatures = `${temperatureEffect}, molten surface with lava rivers, constant volcanic eruptions, glowing magma oceans, semi-solid crust plates floating on magma`
+      atmosphere = "ultra-thick toxic atmosphere with vaporized rock creating orange-red haze"
+      textureStyle = "seamless tileable texture map with bright glowing lava, deep red-orange color scheme, high contrast between molten and cooling areas"
     }
   }
 
-  // Adjust lighting based on star type
+  // A iluminação ainda depende do tipo da estrela, então isso permanece igual.
+  let lightingDesc = ""
   if (starType === "red-dwarf") {
-    lighting = "illuminated by dim reddish-orange light from a red dwarf star, creating deep shadows and warm tones"
+    lightingDesc = "illuminated by dim reddish-orange light from a red dwarf star, warm color temperature, deep shadows in craters"
   } else if (starType === "blue-giant") {
-    lighting = "illuminated by intense blue-white light from a blue giant star, creating sharp bright highlights and cool tones"
+    lightingDesc = "illuminated by intense blue-white light from a blue giant star, cool color temperature, sharp bright highlights"
   } else {
-    lighting = "illuminated by bright yellow-white light from a sun-like star, balanced natural lighting"
+    lightingDesc = "illuminated by bright yellow-white light from a sun-like star, neutral color temperature, balanced lighting"
   }
 
-  // Gravity effects on features
+  // Efeitos da gravidade permanecem iguais.
   const gravityDesc = gravity > 2 
-    ? "with fine-grained compressed surface features due to high gravity" 
+    ? "with fine-grained compressed surface features due to high gravity, flat terrain dominates" 
     : gravity < 0.5 
-    ? "with large smooth features and expanded atmospheric layers due to low gravity"
-    : "with moderate-scale surface features"
+    ? "with large smooth features and tall formations due to low gravity"
+    : "with moderate-scale surface features and varied topography"
 
-  // Build the final optimized prompt for flat graphic style
-  const fullPrompt = `Flat graphic exoplanet illustration: ${baseDescription}. 
-Style: ${textureStyle}, minimal gradients, subtle cell-shading to suggest spherical curvature, no photorealistic noise or glossy reflections.
-Surface: ${surfaceFeatures}, ${gravityDesc}.
-Atmosphere: ${atmosphere}.
-Temperature: ${temperature}K affecting surface characteristics.
-Lighting: ${lighting} from upper-left direction, rim-lit edge.
-View: full-sphere centered view, clean planet silhouette against black space.
-Composition: scientific art-plate style inspired by NASA JPL mission posters, no text overlays, no stars or extra objects in background, balanced composition, limited color palette driven by temperature (${temperature}K) and atmospheric composition.
-Technical: high-resolution square 1:1 format, vector-like crisp details, accurate representation of planetary physics, educational and inspiring.`
+  // Prompt final atualizado com a temperatura correta
+const fullPrompt = `Realistic flat texture map of a ${baseDescription}, designed for 3D sphere wrapping.
+
+// --- INÍCIO DAS ALTERAÇÕES NO PROMPT ---
+FORMAT: Seamless, tileable, SQUARE 2D texture map (1:1 aspect ratio). The texture MUST be designed so the left edge connects perfectly to the right edge to allow for horizontal repeating.
+
+STYLE: ${textureStyle}, photorealistic surface rendering with accurate color grading. Natural lighting with soft shadows. High detail level showing microscopic surface variations.
+
+SURFACE FEATURES: ${surfaceFeatures}, ${gravityDesc}. Features should be distributed evenly across the square map.
+
+ATMOSPHERE & WEATHER: ${atmosphere}. ${planetType !== "Gas Giant" && planetType !== "Neptune-like" ? "Clouds should be rendered as a semi-transparent layer if present." : ""}
+
+COLOR & LIGHTING: ${lightingDesc}. Planet's estimated surface temperature is ${planetSurfaceTemp.toFixed(0)}K (from a ${starTemperature}K star at ${distance} AU), which directly influences the color palette and surface state.
+
+TECHNICAL SPECIFICATIONS:
+- Seamless horizontal wrap (left edge connects to right edge)
+- No borders, frames, text overlays, or UI elements
+- No planet sphere visible - this is a flat unwrapped surface map
+- High resolution suitable for close-up 3D rendering
+- Clean, scientifically accurate representation
+
+OUTPUT: Pure square texture map only, ready for 3D texture application.
+-
+`
 
   return fullPrompt
 }

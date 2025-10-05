@@ -17,24 +17,37 @@ function Planet({ parameters, textureUrl }: {
   parameters: PlanetSimulationParameters
   textureUrl?: string
 }) {
-  const meshRef = useRef<THREE.Mesh>(null)
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null!)
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
 
   useEffect(() => {
-    if (textureUrl && textureUrl.startsWith('data:image')) {
-      const loader = new THREE.TextureLoader()
-      loader.load(
-        textureUrl,
-        (loadedTexture) => {
-          loadedTexture.wrapS = THREE.RepeatWrapping
-          loadedTexture.wrapT = THREE.RepeatWrapping
-          setTexture(loadedTexture)
-        },
-        undefined,
-        (error) => {
-          console.error('Error loading texture:', error)
-        }
-      )
+    if (!textureUrl || !textureUrl.startsWith('data:image')) {
+      setTexture(null);
+      return;
+    }
+
+    const loader = new THREE.TextureLoader()
+    loader.load(
+      textureUrl,
+      (loadedTexture) => {
+        // --- INÍCIO DA CORREÇÃO ---
+        // CORREÇÃO 1: 'encoding' foi substituído por 'colorSpace' nas versões recentes do Three.js
+        // CORREÇÃO 2: O valor agora é 'SRGBColorSpace'
+        loadedTexture.colorSpace = THREE.SRGBColorSpace; 
+        // --- FIM DA CORREÇÃO ---
+
+        loadedTexture.flipY = false;
+        setTexture(loadedTexture)
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading texture:', error)
+      }
+    )
+
+    return () => {
+      texture?.dispose();
     }
   }, [textureUrl])
 
@@ -43,13 +56,12 @@ function Planet({ parameters, textureUrl }: {
       meshRef.current.rotation.y += 0.005
     }
   })
-
-  // Função para interpolação linear entre dois valores
+  
+  // As suas funções de cor e material continuam aqui, sem alterações...
   const lerp = (start: number, end: number, t: number) => {
     return start + (end - start) * t
   }
 
-  // Função para interpolar cores RGB
   const lerpColor = (color1: string, color2: string, t: number) => {
     const c1 = new THREE.Color(color1)
     const c2 = new THREE.Color(color2)
@@ -60,28 +72,25 @@ function Planet({ parameters, textureUrl }: {
     )
   }
 
-  // Função para obter cor com transição suave baseada na temperatura
   const getColor = () => {
     const temp = parameters.temperature
 
-    // Definir pontos de cor com suas temperaturas
     const colorStops = [
-      { temp: 0, color: "#0a2877" },      // Azul muito escuro (espaço profundo)
-      { temp: 100, color: "#1e3a5f" },    // Azul escuro
-      { temp: 200, color: "#87ceeb" },    // Azul céu (gelo)
-      { temp: 273, color: "#4682b4" },    // Azul aço (água congelando)
-      { temp: 373, color: "#5f9ea0" },    // Azul cadete (água)
-      { temp: 500, color: "#8b7355" },    // Marrom (rocha)
-      { temp: 600, color: "#d2691e" },    // Chocolate (deserto quente)
-      { temp: 800, color: "#ff8c00" },    // Laranja escuro (vulcânico)
-      { temp: 1000, color: "#ff6347" },   // Tomate (muito quente)
-      { temp: 1200, color: "#ff4500" },   // Laranja-vermelho (lava)
-      { temp: 1500, color: "#ff0000" },   // Vermelho puro (fundido)
-      { temp: 2000, color: "#ffff00" },   // Amarelo (extremamente quente)
-      { temp: 3000, color: "#ffffff" }    // Branco (super quente)
+      { temp: 0, color: "#0a2877" },
+      { temp: 100, color: "#1e3a5f" },
+      { temp: 200, color: "#87ceeb" },
+      { temp: 273, color: "#4682b4" },
+      { temp: 373, color: "#5f9ea0" },
+      { temp: 500, color: "#8b7355" },
+      { temp: 600, color: "#d2691e" },
+      { temp: 800, color: "#ff8c00" },
+      { temp: 1000, color: "#ff6347" },
+      { temp: 1200, color: "#ff4500" },
+      { temp: 1500, color: "#ff0000" },
+      { temp: 2000, color: "#ffff00" },
+      { temp: 3000, color: "#ffffff" }
     ]
 
-    // Encontrar os dois pontos de cor entre os quais interpolar
     let lower = colorStops[0]
     let upper = colorStops[colorStops.length - 1]
 
@@ -93,16 +102,11 @@ function Planet({ parameters, textureUrl }: {
       }
     }
 
-    // Se a temperatura está abaixo do mínimo ou acima do máximo
     if (temp <= colorStops[0].temp) return colorStops[0].color
     if (temp >= colorStops[colorStops.length - 1].temp) return colorStops[colorStops.length - 1].color
 
-    // Calcular o fator de interpolação (0 a 1)
     const t = (temp - lower.temp) / (upper.temp - lower.temp)
-
-    // Interpolar entre as duas cores
     const interpolatedColor = lerpColor(lower.color, upper.color, t)
-
     return `#${interpolatedColor.getHexString()}`
   }
 
@@ -115,27 +119,32 @@ function Planet({ parameters, textureUrl }: {
     return { metalness: 0.3, roughness: 0.7 }
   }
 
+
   const materialProps = getMaterialProps()
+
+  useEffect(() => {
+    if (materialRef.current) {
+      if (texture) {
+        materialRef.current.map = texture;
+        materialRef.current.color.set("white");
+      } else {
+        materialRef.current.map = null;
+        materialRef.current.color.set(getColor());
+      }
+      materialRef.current.needsUpdate = true;
+    }
+  }, [texture, parameters.temperature]);
+
 
   return (
     <mesh ref={meshRef} scale={parameters.radius * 0.8}>
       <sphereGeometry args={[1, 64, 64]} />
-      {texture ? (
-        <meshStandardMaterial
-          map={texture}
-          {...materialProps}
-        />
-      ) : (
-        <meshStandardMaterial
-          color={getColor()}
-          {...materialProps}
-        />
-      )}
+      <meshStandardMaterial ref={materialRef} {...materialProps} />
     </mesh>
   )
 }
 
-
+// O componente PlanetPreview continua igual.
 export function PlanetPreview({ parameters, isGenerating, textureUrl }: PlanetPreviewProps) {
   const [mounted, setMounted] = useState(false)
 

@@ -15,7 +15,7 @@ export default function AboutPage() {
               NASA Space Apps Challenge 2025
             </div>
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              About ExoVerse
+              About ExoLab
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 leading-relaxed max-w-3xl mx-auto">
               Transforming complex exoplanet data into immersive, interactive experiences for education and discovery
