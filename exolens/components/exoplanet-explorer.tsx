@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Star, MapPin, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Loader2, Sparkles, Thermometer, Globe, Calculator } from "lucide-react"
+import { Search, Star, MapPin, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Loader2, Sparkles, Thermometer, Globe, Calculator, Telescope, Compass, Target } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type { PlanetData } from "@/app/laboratory/page"
 
@@ -140,17 +140,14 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
     }
 
     const handleAnalyzePlanet = (planet: ExoplanetData) => {
-        // Calcular escape velocity baseado em massa e raio
-        // v_esc = sqrt(2 * G * M / R)
-        // Onde G = 6.674×10^-11 m^3 kg^-1 s^-2
         const G = 6.674e-11
-        const earthMass = 5.972e24 // kg
-        const earthRadius = 6.371e6 // metros
+        const earthMass = 5.972e24
+        const earthRadius = 6.371e6
 
         const planetMassKg = (planet.pl_masse || 1) * earthMass
         const planetRadiusM = (planet.pl_rade || 1) * earthRadius
 
-        const escapeVelocity = Math.sqrt(2 * G * planetMassKg / planetRadiusM) / 1000 // converter para km/s
+        const escapeVelocity = Math.sqrt(2 * G * planetMassKg / planetRadiusM) / 1000
 
         const planetData: PlanetData = {
             name: planet.pl_name,
@@ -198,8 +195,96 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
         return { label: "Low", color: "red" }
     }
 
+    const observationRegions = [
+        {
+            name: "Lyra Constellation",
+            description: "Region observed by the Kepler mission, where thousands of exoplanets have been detected",
+            icon: Telescope,
+            color: "from-purple-500 to-pink-500",
+            mission: "Kepler"
+        },
+        {
+            name: "Orion Region",
+            description: "Rich in young stars and planetary systems in formation",
+            icon: Star,
+            color: "from-blue-500 to-cyan-500",
+            mission: "Multiple"
+        },
+        {
+            name: "Sagittarius Arm",
+            description: "One of the spiral arms of the Milky Way, with high concentration of Sun-like stars",
+            icon: Compass,
+            color: "from-orange-500 to-red-500",
+            mission: "Survey"
+        },
+        {
+            name: "Solar Neighborhood",
+            description: "Nearby stars such as Proxima Centauri and Tau Ceti are ideal targets",
+            icon: Target,
+            color: "from-green-500 to-emerald-500",
+            mission: "TESS"
+        }
+    ]
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
+            {/* Hero Section - Where to Look */}
+            <div className="text-center space-y-6 py-8">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 border border-purple-500/30 rounded-full text-purple-300 text-sm font-medium mb-4">
+                    <Telescope className="w-4 h-4" />
+                    Exoplanet Observation Guide
+                </div>
+                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                    Where Should We Look?
+                </h1>
+                <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+                    The universe is vast and full of mysteries. Some regions of the sky are particularly promising for exoplanet discovery.
+                </p>
+            </div>
+
+            {/* Observation Regions Cards */}
+            <div className="grid md:grid-cols-2 gap-4">
+                {observationRegions.map((region, idx) => {
+                    const Icon = region.icon
+                    return (
+                        <Card
+                            key={idx}
+                            className="group relative overflow-hidden bg-[#1b1b1b] border-[#333333] hover:border-purple-500/50 transition-all duration-300"
+                        >
+                            {/* Gradient Background */}
+                            <div className={`absolute inset-0 bg-gradient-to-br ${region.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+
+                            <div className="relative p-6 space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className={`p-3 rounded-lg bg-gradient-to-br ${region.color} bg-opacity-20`}>
+                                        <Icon className="w-6 h-6 text-white" />
+                                    </div>
+                                    <Badge variant="outline" className="border-purple-500/30 text-purple-300">
+                                        {region.mission}
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-2">{region.name}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">
+                                        {region.description}
+                                    </p>
+                                </div>
+                            </div>
+                        </Card>
+                    )
+                })}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 py-8">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
+                <div className="flex items-center gap-2 text-purple-400">
+                    <Search className="w-5 h-5" />
+                    <span className="text-sm font-semibold">Start Your Search</span>
+                </div>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
+            </div>
+
             {/* Search Bar */}
             <div className="space-y-3">
                 <div className="flex gap-3">
@@ -212,14 +297,14 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            className="pl-10 bg-[#2c2c2c] border-[#404040] text-white placeholder:text-gray-500"
+                            className="pl-10 bg-[#2c2c2c] border-[#404040] text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
                         />
                     </div>
                     <Button
                         onClick={handleSearch}
                         disabled={isLoading}
                         data-search-button
-                        className="bg-blue-600 hover:bg-blue-700 px-8"
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8"
                     >
                         {isLoading ? (
                             <>
@@ -237,7 +322,7 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                         variant={searchType === "star" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSearchType("star")}
-                        className={searchType === "star" ? "bg-blue-600" : "bg-[#2c2c2c] border-[#404040]"}
+                        className={searchType === "star" ? "bg-purple-600 hover:bg-purple-700" : "bg-[#2c2c2c] border-[#404040] hover:bg-[#3c3c3c]"}
                     >
                         <Star className="w-4 h-4 mr-2" />
                         Search Stars
@@ -246,7 +331,7 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                         variant={searchType === "planet" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSearchType("planet")}
-                        className={searchType === "planet" ? "bg-blue-600" : "bg-[#2c2c2c] border-[#404040]"}
+                        className={searchType === "planet" ? "bg-purple-600 hover:bg-purple-700" : "bg-[#2c2c2c] border-[#404040] hover:bg-[#3c3c3c]"}
                     >
                         <Globe className="w-4 h-4 mr-2" />
                         Search Planets
@@ -266,9 +351,9 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                             <button
                                 key={system.hostname}
                                 onClick={() => handleQuickSearch(system.hostname)}
-                                className="p-3 bg-[#1b1b1b] rounded-lg border border-[#404040] hover:border-blue-500 transition-all text-left"
+                                className="p-3 bg-[#1b1b1b] rounded-lg border border-[#404040] hover:border-purple-500 hover:bg-[#252525] transition-all text-left group"
                             >
-                                <p className="text-white font-semibold text-sm mb-1">{system.hostname}</p>
+                                <p className="text-white font-semibold text-sm mb-1 group-hover:text-purple-400 transition-colors">{system.hostname}</p>
                                 <p className="text-xs text-gray-400">{system.planet_count} planet(s)</p>
                                 {system.sy_dist && (
                                     <p className="text-xs text-blue-400 mt-1">{system.sy_dist.toFixed(1)} pc</p>
@@ -295,7 +380,7 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                             const starType = getStarType(firstPlanet.st_spectype)
 
                             return (
-                                <Card key={hostname} className="bg-[#2c2c2c] border-[#404040] overflow-hidden">
+                                <Card key={hostname} className="bg-[#2c2c2c] border-[#404040] overflow-hidden hover:border-purple-500/50 transition-colors">
                                     <button
                                         onClick={() => toggleStar(hostname)}
                                         className="w-full p-5 flex items-center justify-between hover:bg-[#333333] transition-colors"
@@ -322,7 +407,7 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                                                             {firstPlanet.st_teff.toFixed(0)}K
                                                         </span>
                                                     )}
-                                                    <Badge className="bg-blue-600 text-white">
+                                                    <Badge className="bg-purple-600 text-white">
                                                         {planets.length} planet(s)
                                                     </Badge>
                                                 </div>
@@ -342,7 +427,7 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                                                     return (
                                                         <div
                                                             key={idx}
-                                                            className="p-5 bg-[#2c2c2c] rounded-lg border border-[#404040] hover:border-blue-500/50 transition-colors"
+                                                            className="p-5 bg-[#2c2c2c] rounded-lg border border-[#404040] hover:border-purple-500/50 transition-colors"
                                                         >
                                                             <div className="flex items-start justify-between mb-4">
                                                                 <div className="flex-1">
@@ -412,7 +497,6 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
                                                                 </div>
                                                             </div>
 
-                                                            {/* Botão de Análise */}
                                                             <Button
                                                                 onClick={() => handleAnalyzePlanet(planet)}
                                                                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
@@ -434,8 +518,8 @@ export function ExoplanetExplorer({ onPlanetSelect }: ExoplanetExplorerProps) {
             ) : !isLoading && (
                 <Card className="p-12 bg-[#2c2c2c] border-[#404040] text-center">
                     <div className="flex flex-col items-center gap-4">
-                        <div className="p-6 bg-[#3c3c3c] rounded-full">
-                            <Search className="w-12 h-12 text-gray-500" />
+                        <div className="p-6 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-full">
+                            <Search className="w-12 h-12 text-purple-400" />
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-white mb-2">Start Exploring</h3>
