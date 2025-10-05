@@ -52,7 +52,7 @@ export function Navigation() {
 
         {/* CTA Button */}
         <Button asChild size="sm" className="hidden sm:flex transition-all duration-300 hover:shadow-[0_0_20px_rgba(65,105,225,0.3),_0_0_40px_rgba(0,217,255,0.2)]">
-          <Link href="/laboratory">Launch Explorer</Link>
+          <Link href="/laboratory">Launch esoLens</Link>
         </Button>
       </nav>
     </header>

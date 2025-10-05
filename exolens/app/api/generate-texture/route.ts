@@ -11,32 +11,43 @@ export async function POST(request: Request) {
     // Build a detailed prompt for AI image generation
     const prompt = buildTexturePrompt({ radius, temperature, mass, starType, planetType, distance })
 
-    const GOOGLE_API_KEY = "AIzaSyDA_gU5rgXZT4CBXf11I9otd01ZnybMpU8"
+    // Carrega as variáveis do .env
+    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+    const GOOGLE_SERVICE_ACCOUNT_TYPE = process.env.GOOGLE_SERVICE_ACCOUNT_TYPE;
+    const GOOGLE_SERVICE_ACCOUNT_PROJECT_ID = process.env.GOOGLE_SERVICE_ACCOUNT_PROJECT_ID;
+    const GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_ID = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_ID;
+    const GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL;
+    const GOOGLE_SERVICE_ACCOUNT_CLIENT_ID = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_ID;
+    const GOOGLE_SERVICE_ACCOUNT_AUTH_URI = process.env.GOOGLE_SERVICE_ACCOUNT_AUTH_URI;
+    const GOOGLE_SERVICE_ACCOUNT_TOKEN_URI = process.env.GOOGLE_SERVICE_ACCOUNT_TOKEN_URI;
+    const GOOGLE_SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL = process.env.GOOGLE_SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL;
+    const GOOGLE_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL;
+    const GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN = process.env.GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN;
 
-    if (!GOOGLE_API_KEY) {
-      console.warn('Google API key not configured, returning placeholder')
+    if (!GOOGLE_API_KEY || !GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
+      console.warn('Google API key or service account not configured, returning placeholder')
       return NextResponse.json({
         success: true,
         prompt: prompt,
         textureUrl: `/placeholder.svg?height=1024&width=1024&query=${encodeURIComponent(prompt)}`,
-        message: "Google API key not configured. Using placeholder image.",
+        message: "Google API key or service account not configured. Using placeholder image.",
       })
     }
 
     const serviceAccountKey = {
-      "type": "service_account",
-      "project_id": "exolens",
-      "private_key_id": "4d2812b0878af5f9a75abf62fd7fe5693e029be6",
-      "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDAzK7aGQGIu2QE\ngRb6sstYdgu4tnHD5KvxROZLx5muS2yldmd/CEKkFxLLUEzhlsteoVkML9rXXzJG\n1HjjALjRL7eL56uyehA5yJd4/HSZg3n6ZnmcR6ZCgL90AuAl6pH/Hz9C8L3e3PmW\nLBogTnSqqzOwvrMYa4S1NpoqOWXJqArMGB7xZGhUuPpvXCUWNIWmKy+rmxbK1iyh\nj8FF9iSL5bWSHJoYeHKcdvPRuLCs5Xk4gySyZb2Wrlv0O6vzE5Gkylx/DgLZkYVg\nJSwpz+Z2aAZiE6hqrlmcOnzHmp+Va4DzqQb41E6cKgSVShvhdaTtlTvIxn10HdhK\nJ52zHWtZAgMBAAECggEAFAObeh4C7AIB77rD2yoA1HHKpTXhSPPdyom7u22gvThs\nsp+APm5p1pVjmNIA7SElgvEOaKa2Gcny0un/E5eRV/vTWrVlvD0SHqF9YeyZIQ+G\nM9F7+dZxQrGRTlZ3FNCNL9X7T/RkTXSUfzucSbLDRy1HDCe7uUL+D3630b7MG3sF\nXqyT7IPyNijNCUlf4aOBJLBX5Jxpr+ralNLhhQrQNalgRBOvLT3LfGyFwgKgByVN\n2ASIizQkMLRTA5BwQly3Hc1jz/8UlrV2rgbePb+m8VNBMiWdYqwcLOjA8cvc1IHj\nhoXzbItZNv9PkEJ00NxUr28hJYbW4qwuvHn/8moyQQKBgQDmCTG4dUMEh2hD07zB\nhOGsywA4pLtYwXoPqYnp8l/Q1U30yObfR9tciRuyg8esRLCXh+BiiOubMTVarEk7\nx41gUW9TjBBFp3cYQ14ZMjdUN72dj0yhhQCzE2J6HBpOik3Ht70ByXE3xY7aY+Ui\niiEXLk5DP67+0bxEsNHkRkh7+QKBgQDWj46eDzydh8uLysjb+IaRKlvVJyrDc769\nL88w1u2p/P5Z+cgPRrHZUxv0xmy9fCDJvuuuaEEVURFY9gLx9c9E5sbUGno9tPml\nZX531kBQgfU0s41szgKCg22I+cIWYnRQ9TLxkjWm2b9G64tyZpe/gtVFhMsN9B5M\nmKh20MKCYQKBgGB57q5sD6VwnNwFi56l+ngb04XuINzCmEzFUCAcFO9i5oUJVTrD\nyk5u+nzOJAot7NpAlGz++8Fky/mxVC2MLdD9lnE1xwVPjPVSG775fpcFobLZDMyZ\nGYgBU0XfT3EtNB3VA6IiOCep5ZXWW502zVYJh61QojYhBJLSjdTtXS0RAoGAXDcw\n/Z/g1nfRtNBACcLD20pQU8lUqNJrTRZqPzxwwxmYHAWtxVsF/zioEEjj3YCm+u6S\njtACAO5pvUlmtKWIIr3pAKosla7diQeZFlpAJBnm0HLHOtdD3uIrxq5Ji6NfCJiJ\n/6duZbq6afm8YjvTxpytmwZa2zFrgFIwPXi10KECgYBPosvyuP1CmN5MWUiVpY+r\n30KCcYvxjDtv3F/1tjuJiRMXKVjh1HIjNItxu3IPGjBpbsVDGBTXbBTFU4rJAqqP\nrjDd411WN0SOy50bjqGo4vr78WITME+J4bAuqc8FLU2sVZ13cg/SuOT+VjBGcuSA\n0/+ikp1qVOETbN7lrwRFHA==\n-----END PRIVATE KEY-----\n",
-      "client_email": "otavio-augusto@exolens.iam.gserviceaccount.com",
-      "client_id": "100989298617681419486",
-      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-      "token_uri": "https://oauth2.googleapis.com/token",
-      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/otavio-augusto%40exolens.iam.gserviceaccount.com",
-      "universe_domain": "googleapis.com"
-    }
-
+      type: GOOGLE_SERVICE_ACCOUNT_TYPE,
+      project_id: GOOGLE_SERVICE_ACCOUNT_PROJECT_ID,
+      private_key_id: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_ID,
+      private_key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+      client_email: GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL,
+      client_id: GOOGLE_SERVICE_ACCOUNT_CLIENT_ID,
+      auth_uri: GOOGLE_SERVICE_ACCOUNT_AUTH_URI,
+      token_uri: GOOGLE_SERVICE_ACCOUNT_TOKEN_URI,
+      auth_provider_x509_cert_url: GOOGLE_SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL,
+      client_x509_cert_url: GOOGLE_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL,
+      universe_domain: GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN,
+    };
 
     const auth = new GoogleAuth({
       credentials: serviceAccountKey,
@@ -69,7 +80,6 @@ export async function POST(request: Request) {
           parameters: {
             sampleCount: 1,
             aspectRatio: "1:1",
-            // Os parâmetros de segurança mudaram, use as novas configurações se necessário
           },
         }),
       }
@@ -265,7 +275,6 @@ function buildTexturePrompt(params: {
   // Prompt final atualizado com a temperatura correta
 const fullPrompt = `Realistic flat texture map of a ${baseDescription}, designed for 3D sphere wrapping.
 
-// --- INÍCIO DAS ALTERAÇÕES NO PROMPT ---
 FORMAT: Seamless, tileable, SQUARE 2D texture map (1:1 aspect ratio). The texture MUST be designed so the left edge connects perfectly to the right edge to allow for horizontal repeating.
 
 STYLE: ${textureStyle}, photorealistic surface rendering with accurate color grading. Natural lighting with soft shadows. High detail level showing microscopic surface variations.
