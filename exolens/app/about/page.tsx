@@ -272,7 +272,24 @@ export default function AboutPage() {
                 Our goal is to demonstrate the potential of <strong className="text-blue-400">NASA's open science</strong> initiative and inspire the next generation of scientists by making exoplanet research accessible, engaging, and educational for everyone.
               </p>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Best Use of Science */}
+                <div className="p-5 bg-gradient-to-br from-indigo-600/10 to-blue-600/10 rounded-lg border border-indigo-500/30">
+                  <h4 className="text-lg font-bold text-white mb-2">🏆 Best Use of Science</h4>
+                  <p className="text-sm text-gray-400">
+                    The project that makes the best and most valid use of science and/or the scientific method.
+                  </p>
+                </div>
+
+                {/* Best Use of Data */}
+                <div className="p-5 bg-gradient-to-br from-yellow-600/10 to-orange-600/10 rounded-lg border border-yellow-500/30">
+                  <h4 className="text-lg font-bold text-white mb-2">🏆 Best Use of Data</h4>
+                  <p className="text-sm text-gray-400">
+                    The project that best makes space data accessible or leverages it for a unique application.
+                  </p>
+                </div>
+
+                {/* Best Use of Technology */}
                 <div className="p-5 bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-lg border border-blue-500/30">
                   <h4 className="text-lg font-bold text-white mb-2">🏆 Best Use of Technology</h4>
                   <p className="text-sm text-gray-400">
@@ -280,10 +297,11 @@ export default function AboutPage() {
                   </p>
                 </div>
 
-                <div className="p-5 bg-gradient-to-br from-pink-600/10 to-red-600/10 rounded-lg border border-pink-500/30">
-                  <h4 className="text-lg font-bold text-white mb-2">✨ Most Inspirational</h4>
+                {/* Galactic Impact */}
+                <div className="p-5 bg-gradient-to-br from-green-600/10 to-emerald-600/10 rounded-lg border border-green-500/30">
+                  <h4 className="text-lg font-bold text-white mb-2">🏆 Galactic Impact</h4>
                   <p className="text-sm text-gray-400">
-                    Transforming complex scientific data into beautiful, immersive experiences that spark curiosity and inspire future astronomers.
+                    The project with the most potential to improve life on Earth or in the universe.
                   </p>
                 </div>
               </div>
